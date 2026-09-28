@@ -163,21 +163,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 092b711e1db06c3438c7caf8bc9a1063, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMovements
-  controller: {fileID: 3339668830366403278}
-  groundCheck: {fileID: 2534878298133986882}
-  groundMask:
-    serializedVersion: 2
-    m_Bits: 64
-  sphereRadius: 0.3
   speed: 5
   sprintSpeed: 8
   groundAcceleration: 12
+  groundFriction: 14
   airAcceleration: 2.5
-  gravity: -9.81
-  terminalVelocity: -50
+  gravity: -8.73
+  airDrag: 0.005
   jumpHeight: 3
   coyoteTime: 0.12
   jumpBufferTime: 0.12
+  hardLandingSpeed: 8
+  hardLandingMomentumLoss: 0.4
+  recoveryTime: 0.35
+  recoverySpeedFactor: 0.5
 --- !u!114 &5546782664758144639
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -1,61 +1,119 @@
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+[RequireComponent(typeof(CharacterController))]
 public class PlayerMovements : MonoBehaviour
 {
-    [Header("Referencias")]
-    public CharacterController controller;
-    public Transform groundCheck;
-    public LayerMask groundMask;
-    public float sphereRadius = 0.3f;
-
     [Header("Movimiento")]
     public float speed = 5f;
     public float sprintSpeed = 8f;
-    public float groundAcceleration = 12f; // qué tan rápido acelera en el suelo
-    public float airAcceleration = 2.5f;   // bajo = conserva el impulso en el aire
+    public float groundAcceleration = 12f;   // al pulsar una dirección
+    public float groundFriction = 14f;       // frenado al soltar las teclas
+    public float airAcceleration = 3f;       // control en el aire (dirige, no crea velocidad)
 
-    [Header("Gravedad")]
+    [Header("Gravedad y resistencia del aire")]
     public float gravity = -9.81f;
-    public float terminalVelocity = -50f;  // velocidad máxima de caída
+    public float airDrag = 0.0032f;          // velocidad terminal ≈ sqrt(9.81 / airDrag) ≈ 55 m/s
 
     [Header("Salto")]
     public float jumpHeight = 1.2f;
-    public float coyoteTime = 0.12f;       // puedes saltar justo después de dejar un borde
-    public float jumpBufferTime = 0.12f;   // se recuerda el salto pulsado justo antes de aterrizar
+    public float coyoteTime = 0.12f;
+    public float jumpBufferTime = 0.12f;
 
+    [Header("Aterrizaje")]
+    public float hardLandingSpeed = 8f;            // impacto "fuerte" (≈ caída de 3 m)
+    public float hardLandingMomentumLoss = 0.6f;   // 0-1: impulso horizontal que se pierde
+    public float recoveryTime = 0.35f;             // tiempo torpe tras un aterrizaje fuerte
+    public float recoverySpeedFactor = 0.5f;       // velocidad durante la recuperación
+
+    public event Action<float> Landed;             // velocidad de impacto (para cámara, sonido, daño)
+
+    const float MinLandingSpeed = 3f;
+
+    CharacterController controller;
     Vector2 moveInput;
     Vector3 horizontalVelocity;
     float verticalVelocity;
     float coyoteTimer;
     float jumpBufferTimer;
-    bool isGrounded;
+    float recoveryTimer;
     bool isSprinting;
+    bool wasGrounded;
+
+    void Awake() => controller = GetComponent<CharacterController>();
 
     void Update()
     {
         float dt = Time.deltaTime;
+        bool grounded = controller.isGrounded;
 
-        // --- Salto leído directamente del teclado (no depende del evento de PlayerInput) ---
+        if (grounded && !wasGrounded) HandleLanding();
+        wasGrounded = grounded;
+
+        ReadJumpInput();
+        UpdateTimers(dt, grounded);
+        UpdateHorizontalVelocity(dt, grounded);
+        UpdateVerticalVelocity(dt, grounded, out float displacementY);
+
+        controller.Move(horizontalVelocity * dt + Vector3.up * displacementY);
+
+        // Golpe con el techo: cancelar la subida
+        if ((controller.collisionFlags & CollisionFlags.Above) != 0 && verticalVelocity > 0f)
+            verticalVelocity = 0f;
+    }
+
+    void HandleLanding()
+    {
+        float impact = -verticalVelocity;   // aún guarda la velocidad de caída
+        if (impact < MinLandingSpeed) return;
+
+        Landed?.Invoke(impact);
+
+        if (impact >= hardLandingSpeed)
+        {
+            horizontalVelocity *= 1f - hardLandingMomentumLoss;
+            recoveryTimer = recoveryTime;
+        }
+    }
+
+    void ReadJumpInput()
+    {
         if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
             jumpBufferTimer = jumpBufferTime;
+    }
 
-        // --- Comprobar suelo (CharacterController o esfera) ---
-        isGrounded = (controller.isGrounded || Physics.CheckSphere(groundCheck.position, sphereRadius, groundMask))
-                     && verticalVelocity <= 0f;
-
-        // --- Temporizadores ---
-        coyoteTimer = isGrounded ? coyoteTime : coyoteTimer - dt;
+    void UpdateTimers(float dt, bool grounded)
+    {
+        coyoteTimer = (grounded && verticalVelocity <= 0f) ? coyoteTime : coyoteTimer - dt;
         jumpBufferTimer -= dt;
+        recoveryTimer -= dt;
+    }
 
-        // --- Movimiento horizontal con inercia ---
-        float currentSpeed = isSprinting ? sprintSpeed : speed;
-        Vector3 targetVelocity = (transform.right * moveInput.x + transform.forward * moveInput.y) * currentSpeed;
-        float accel = isGrounded ? groundAcceleration : airAcceleration;
-        horizontalVelocity = Vector3.MoveTowards(horizontalVelocity, targetVelocity, accel * dt);
+    void UpdateHorizontalVelocity(float dt, bool grounded)
+    {
+        Vector3 direction = Vector3.ClampMagnitude(transform.right * moveInput.x + transform.forward * moveInput.y, 1f);
+        bool hasInput = direction.sqrMagnitude > 0.0001f;
+        float targetSpeed = (isSprinting ? sprintSpeed : speed) * (recoveryTimer > 0f ? recoverySpeedFactor : 1f);
 
-        // --- Vertical: suelo, salto y gravedad ---
-        if (isGrounded)
+        if (grounded)
+        {
+            // Suelo: aceleras hacia la velocidad objetivo y la fricción te frena
+            float accel = hasInput ? groundAcceleration : groundFriction;
+            horizontalVelocity = Vector3.MoveTowards(horizontalVelocity, direction * targetSpeed, accel * dt);
+        }
+        else if (hasInput)
+        {
+            // Aire: puedes dirigirte, pero no ganas velocidad de la nada
+            float maxSpeed = Mathf.Max(horizontalVelocity.magnitude, targetSpeed);
+            horizontalVelocity = Vector3.ClampMagnitude(horizontalVelocity + direction * airAcceleration * dt, maxSpeed);
+        }
+        // Aire sin input: se conserva el impulso (inercia)
+    }
+
+    void UpdateVerticalVelocity(float dt, bool grounded, out float displacementY)
+    {
+        if (grounded && verticalVelocity < 0f)
             verticalVelocity = -2f; // mantiene al jugador pegado al suelo
 
         if (jumpBufferTimer > 0f && coyoteTimer > 0f)
@@ -65,38 +123,20 @@ public class PlayerMovements : MonoBehaviour
             coyoteTimer = 0f;
         }
 
-        // Integración independiente del framerate (media de velocidad inicial y final)
-        float previousVelocity = verticalVelocity;
-        verticalVelocity = Mathf.Max(verticalVelocity + gravity * dt, terminalVelocity);
-        float displacementY = (previousVelocity + verticalVelocity) * 0.5f * dt;
-
-        // --- Aplicar TODO en un único Move ---
-        Vector3 move = horizontalVelocity * dt + Vector3.up * displacementY;
-
-        // Debug.Log($"Grounded: {isGrounded} | Buffer: {jumpBufferTimer:F2} | Coyote: {coyoteTimer:F2} | VelY: {verticalVelocity:F2}");
-        controller.Move(move);
-
-        // Golpe con el techo: cancelar la subida
-        if ((controller.collisionFlags & CollisionFlags.Above) != 0 && verticalVelocity > 0f)
-            verticalVelocity = 0f;
+        // Gravedad + resistencia del aire (siempre se opone al movimiento)
+        float previous = verticalVelocity;
+        float acceleration = gravity - airDrag * verticalVelocity * Mathf.Abs(verticalVelocity);
+        verticalVelocity += acceleration * dt;
+        displacementY = (previous + verticalVelocity) * 0.5f * dt;
     }
 
     #region Input
-    public void OnMove(InputAction.CallbackContext ctx)
-    {
-        moveInput = ctx.ReadValue<Vector2>();
-    }
-
-    public void OnJump(InputAction.CallbackContext ctx)
-    {
-        if (ctx.performed)
-            jumpBufferTimer = jumpBufferTime;
-    }
+    public void OnMove(InputAction.CallbackContext ctx) => moveInput = ctx.ReadValue<Vector2>();
 
     public void OnSprint(InputAction.CallbackContext ctx)
     {
-        if (ctx.performed) isSprinting = true;   // tecla pulsada
-        if (ctx.canceled) isSprinting = false;   // tecla soltada
+        if (ctx.performed) isSprinting = true;
+        if (ctx.canceled) isSprinting = false;
     }
     #endregion
 }
