@@ -168,7 +168,7 @@ MonoBehaviour:
   groundAcceleration: 12
   groundFriction: 14
   airAcceleration: 2.5
-  gravity: -8.73
+  gravity: -12
   airDrag: 0.005
   jumpHeight: 3
   coyoteTime: 0.12
