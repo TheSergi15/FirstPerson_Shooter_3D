@@ -45,6 +45,7 @@ GameObject:
   - component: {fileID: 3339668830366403278}
   - component: {fileID: 769615146758597768}
   - component: {fileID: 5546782664758144639}
+  - component: {fileID: 1594946553342950944}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -326,11 +327,48 @@ MonoBehaviour:
       m_Calls: []
     m_ActionId: 9caa3d8a-6b2f-4e8e-8bad-6ede561bd9be
     m_ActionName: UI/TrackedDeviceOrientation
+  - m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1594946553342950944}
+        m_TargetAssemblyTypeName: PlayerShooting, Assembly-CSharp
+        m_MethodName: OnFire
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+    m_ActionId: 56ffa194-36b1-4c79-94bb-3e27824b6c46
+    m_ActionName: 'Player/Fire[/Mouse/leftButton]'
   m_NeverAutoSwitchControlSchemes: 0
   m_DefaultControlScheme: 
   m_DefaultActionMap: 
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
+--- !u!114 &1594946553342950944
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5966529678580755358}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31b25f929d1dbf64799aec6602796343, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerShooting
+  playerCamera: {fileID: 0}
+  damage: 25
+  range: 100
+  fireRate: 0.15
+  automatic: 1
+  hitLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  hitEffect: {fileID: 0}
 --- !u!1 &9154724030620761911
 GameObject:
   m_ObjectHideFlags: 0
