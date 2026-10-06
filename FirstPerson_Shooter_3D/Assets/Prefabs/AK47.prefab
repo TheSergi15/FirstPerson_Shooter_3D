@@ -1,5 +1,36 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &985988429643353800
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6277922669213015531}
+  m_Layer: 0
+  m_Name: FirePoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6277922669213015531
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 985988429643353800}
+  serializedVersion: 2
+  m_LocalRotation: {x: -1, y: 0, z: 0, w: 0}
+  m_LocalPosition: {x: 0, y: -0.0079, z: -0.3105}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 9020860363295819786}
+  m_LocalEulerAnglesHint: {x: -180, y: 0, z: 0}
 --- !u!1001 &8843435561077927905
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -54,11 +85,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: -8679921383154817045, guid: 115ab982b626e7f4281fb190244f181e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6277922669213015531}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 115ab982b626e7f4281fb190244f181e, type: 3}
       insertIndex: -1
       addedObject: {fileID: 102298956363978041}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 115ab982b626e7f4281fb190244f181e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6493210852452179844}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 115ab982b626e7f4281fb190244f181e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 755685982561372717}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 115ab982b626e7f4281fb190244f181e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7461432974218390838}
   m_SourcePrefab: {fileID: 100100000, guid: 115ab982b626e7f4281fb190244f181e, type: 3}
 --- !u!1 &8537514379385918128 stripped
 GameObject:
@@ -86,3 +129,88 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.030685108, y: 0.264298, z: 0.8880977}
   m_Center: {x: 0.0025469176, y: -0.07714929, z: 0.12151787}
+--- !u!114 &6493210852452179844
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8537514379385918128}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a0199a98b2bad62459f806d31daf1c55, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectileGun
+  projectilePrefab: {fileID: 7797300411802682859, guid: fb04ec5fb2f461540a426542499ab299, type: 3}
+  firePoint: {fileID: 6277922669213015531}
+  playerCamera: {fileID: 0}
+  aimMask:
+    serializedVersion: 2
+    m_Bits: 119
+  projectileSpeed: 30
+  damage: 25
+  fireRate: 1.5
+  automatic: 0
+  spread: 0.1
+  aimDistance: 100
+  magazineSize: 6
+  reserveAmmo: 24
+  reloadTime: 2
+  muzzleFlash: {fileID: 0}
+  audioSource: {fileID: 0}
+  shootClip: {fileID: 8300000, guid: a4cd7f906e7f8ce468a39268bbd81bb9, type: 3}
+  reloadClip: {fileID: 8300000, guid: 56d230face4141e4dadd394b36ee00fd, type: 3}
+--- !u!54 &755685982561372717
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8537514379385918128}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 0
+  m_Interpolate: 2
+  m_Constraints: 0
+  m_CollisionDetection: 3
+--- !u!114 &7461432974218390838
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8537514379385918128}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 43062b7f19a1fb14890265fbaa3533b7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PIckUpController
+  gunScript: {fileID: 6493210852452179844}
+  rb: {fileID: 755685982561372717}
+  coll: {fileID: 102298956363978041}
+  player: {fileID: 0}
+  gunContainer: {fileID: 0}
+  fpsCam: {fileID: 0}
+  pickUpRange: 0
+  dropForwardForce: 0
+  dropUpwardForce: 0
+  equipped: 0
+--- !u!4 &9020860363295819786 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 115ab982b626e7f4281fb190244f181e, type: 3}
+  m_PrefabInstance: {fileID: 8843435561077927905}
+  m_PrefabAsset: {fileID: 0}
