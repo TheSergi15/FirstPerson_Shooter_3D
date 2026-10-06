@@ -17,6 +17,24 @@ public class PIckUpController : MonoBehaviour
     public bool equipped;
     public static bool slotFull;
 
+    private void Start()
+    {
+        //Setup
+        if (!equipped)
+        {
+            gunScript.enabled = false;
+            rb.isKinematic = false;
+            coll.isTrigger = false;
+        }
+        if (equipped)
+        {
+            gunScript.enabled = true;
+            rb.isKinematic = true;
+            coll.isTrigger = true;
+            slotFull = true;
+        }
+    }
+
 
     private void Update()
     {
@@ -34,6 +52,12 @@ public class PIckUpController : MonoBehaviour
         equipped = true;
         slotFull = true;
 
+        //Hacer el arma un hijo de la cámara y moverlo a la posición inicial por defecto 
+        transform.SetParent(gunContainer);
+        transform.localPosition = Vector3.zero;
+        transform.localRotation = Quaternion.Euler(Vector3.zero);
+        transform.localScale = Vector3.one;
+
         //Hacer que el Rigidbody sea kinematic y BoxCollider trigger
         rb.isKinematic = true;
         coll.isTrigger = true;
@@ -49,9 +73,24 @@ public class PIckUpController : MonoBehaviour
         equipped = false;
         slotFull = false;
 
+        //Set Parent to null
+        transform.SetParent(null);
+
         //Hacer que el Rigidbody no sea kinematic y BoxCollider trigger
         rb.isKinematic = false;
         coll.isTrigger = false;
+
+        //Arma recoge el momento del player 
+        rb.linearVelocity = player.GetComponent<Rigidbody>().linearVelocity;
+
+        //Aplica Fuerza
+        rb.AddForce(fpsCam.forward * dropForwardForce, ForceMode.Impulse);
+        rb.AddForce(fpsCam.up * dropUpwardForce, ForceMode.Impulse);
+        //Add random rotation
+        float random = Random.Range(-1f, 1f);
+        rb.AddTorque(new Vector3(random, random, random) * 10);
+
+
 
         //Deshabilita  script
         gunScript.enabled = false;
