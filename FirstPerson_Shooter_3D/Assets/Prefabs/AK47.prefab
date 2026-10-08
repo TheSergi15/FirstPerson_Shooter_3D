@@ -202,7 +202,7 @@ MonoBehaviour:
   gunScript: {fileID: 6493210852452179844}
   rb: {fileID: 755685982561372717}
   coll: {fileID: 102298956363978041}
-  player: {fileID: 0}
+  player: {fileID: 3985688650110840062, guid: 993a4600f9e174346a834374ab292bb9, type: 3}
   gunContainer: {fileID: 0}
   fpsCam: {fileID: 0}
   pickUpRange: 0
