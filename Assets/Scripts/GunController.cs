@@ -1,44 +1,56 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using TMPro; // Novedad: Importamos el espacio de nombres para TextMeshPro
+using TMPro;
 
 public class GunController : MonoBehaviour
 {
-    [Header("Configuración del Arma")]
-    public float damage = 10f;
-    public float range = 100f;
-    public LayerMask enemyLayer;
+    [Header("Configuración de Pistola Base")]
+    public float pistolDamage = 10f;
+    public int pistolMaxAmmo = 6;
+    public float pistolReloadTime = 1f;
 
-    [Header("Munición y Recarga")]
-    public int maxAmmo = 6;
+    [Header("Arma Activa")]
+    public WeaponType currentWeaponType;
+    public string currentWeaponName = "Pistola";
+    public bool isSpecialWeapon = false;
+    private float currentDamage;
     private int currentAmmo;
-    public float reloadTime = 1f;
-    private bool isReloading = false;
+    private int maxAmmo;
+    private float reloadTime;
 
-    [Header("Efectos Visuales")]
+    [Header("Propiedades Escopeta")]
+    public int shotgunPellets = 5;       // Número de perdigones
+    public float shotgunSpread = 0.05f;   // Dispersión del disparo
+
+    [Header("Propiedades Machine Gun (Automática)")]
+    [Tooltip("Disparos por segundo para la ametralladora")]
+    public float machineGunFireRate = 10f;
+    private float nextTimeToFire = 0f;
+
+    [Header("Detección")]
+    public float range = 100f;
+    public LayerMask hitLayers; // Asigna capas de Enemigos, Cajas y Pickups
+
+    [Header("Efectos y UI")]
     public GameObject impactEffectPrefab;
-
-    [Header("Interfaz de Usuario (UI)")]
-    [Tooltip("Arrastra aquí el texto de TextMeshPro de tu Canvas")]
     public TextMeshProUGUI ammoText;
 
     private Camera mainCamera;
+    private bool isReloading = false;
 
     void Start()
     {
         mainCamera = Camera.main;
-        currentAmmo = maxAmmo;
-        UpdateUI(); // Actualizamos la UI al iniciar
+        SetDefaultPistol();
     }
 
     void Update()
     {
-        if (isReloading)
-            return;
+        if (isReloading) return;
 
-        // Recarga con clic derecho
-        if (Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame)
+        // Recarga manual solo para la pistola base con clic derecho
+        if (!isSpecialWeapon && Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame)
         {
             if (currentAmmo < maxAmmo)
             {
@@ -47,29 +59,39 @@ public class GunController : MonoBehaviour
             }
         }
 
-        // Disparo con clic izquierdo
-        if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
+        // --- GESTIÓN DE DISPARO ---
+        if (Mouse.current != null)
         {
-            if (currentAmmo > 0)
+            // MODO AUTOMÁTICO: Solo cuando tenemos equipada la Machine Gun
+            if (isSpecialWeapon && currentWeaponType == WeaponType.MachineGun)
             {
-                Shoot();
+                // isPressed detecta si mantienes el clic izquierdo presionado
+                if (Mouse.current.leftButton.isPressed && Time.time >= nextTimeToFire)
+                {
+                    nextTimeToFire = Time.time + (1f / machineGunFireRate);
+
+                    if (currentAmmo > 0)
+                    {
+                        Shoot();
+                    }
+                }
+            }
+            // MODO SEMIAUTOMÁTICO: Pistola estándar y Escopeta (un disparo por clic)
+            else
+            {
+                if (Mouse.current.leftButton.wasPressedThisFrame)
+                {
+                    if (currentAmmo > 0)
+                    {
+                        Shoot();
+                    }
+                    else if (!isSpecialWeapon)
+                    {
+                        Debug.Log("¡Arma vacía! Recarga.");
+                    }
+                }
             }
         }
-    }
-
-    IEnumerator Reload()
-    {
-        isReloading = true;
-
-        // Cambiamos el texto para avisar al jugador
-        if (ammoText != null)
-            ammoText.text = "RECARGANDO...";
-
-        yield return new WaitForSeconds(reloadTime);
-
-        currentAmmo = maxAmmo;
-        isReloading = false;
-        UpdateUI(); // Restauramos el contador visual
     }
 
     void Shoot()
@@ -77,39 +99,132 @@ public class GunController : MonoBehaviour
         currentAmmo--;
         UpdateUI();
 
-        Ray ray = mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
-        RaycastHit hit;
-
-        if (Physics.Raycast(ray, out hit, range, enemyLayer))
+        if (isSpecialWeapon && currentWeaponType == WeaponType.Shotgun)
         {
+            // Disparo de escopeta con perdigones dispersos
+            for (int i = 0; i < shotgunPellets; i++)
+            {
+                FireRaycast(true);
+            }
+        }
+        else
+        {
+            // Disparo único y preciso (Pistola o Machine Gun)
+            FireRaycast(false);
+        }
+
+        // Si se agota la munición de cualquier arma especial, vuelve a la pistola base
+        if (isSpecialWeapon && currentAmmo <= 0)
+        {
+            Debug.Log("Munición especial agotada. Cambiando a Pistola.");
+            SetDefaultPistol();
+        }
+    }
+
+    void FireRaycast(bool useSpread)
+    {
+        Vector2 mousePos = Mouse.current.position.ReadValue();
+        Ray ray = mainCamera.ScreenPointToRay(mousePos);
+
+        if (useSpread)
+        {
+            Vector3 spread = mainCamera.transform.right * Random.Range(-shotgunSpread, shotgunSpread) +
+                             mainCamera.transform.up * Random.Range(-shotgunSpread, shotgunSpread);
+            ray.direction += spread;
+        }
+
+        RaycastHit hit;
+        if (Physics.Raycast(ray, out hit, range, hitLayers))
+        {
+            // Efecto visual de impacto
             if (impactEffectPrefab != null)
             {
                 GameObject impactGO = Instantiate(impactEffectPrefab, hit.point, Quaternion.LookRotation(hit.normal));
                 Destroy(impactGO, 2f);
             }
 
-            // Daño a enemigos[cite: 2]
-            EnemyHealth target = hit.transform.GetComponent<EnemyHealth>();
-            if (target != null)
+            // 1. Golpe a Caja destructible
+            DestructibleBox box = hit.transform.GetComponent<DestructibleBox>();
+            if (box != null)
             {
-                target.TakeDamage(damage);
+                box.BreakBox();
+                return;
             }
 
-            // --- NUEVA LÓGICA: Curación ---
-            HealthPickup pickup = hit.transform.GetComponent<HealthPickup>();
+            // 2. Golpe a Ítem de Arma
+            WeaponPickup pickup = hit.transform.GetComponent<WeaponPickup>();
             if (pickup != null)
             {
-                pickup.OnShot();
+                pickup.OnShot(this);
+                return;
+            }
+
+            // 3. Golpe a Botiquín
+            HealthPickup heal = hit.transform.GetComponent<HealthPickup>();
+            if (heal != null)
+            {
+                heal.OnShot();
+                return;
+            }
+
+            // 4. Daño a Enemigo
+            EnemyHealth enemy = hit.transform.GetComponent<EnemyHealth>();
+            if (enemy != null)
+            {
+                enemy.TakeDamage(currentDamage);
             }
         }
     }
 
-    // Nueva función centralizada para actualizar el texto
+    public void EquipSpecialWeapon(WeaponType type, int ammo, float damage)
+    {
+        isSpecialWeapon = true;
+        currentWeaponType = type;
+        currentAmmo = ammo;
+        maxAmmo = ammo;
+        currentDamage = damage;
+
+        if (type == WeaponType.Shotgun)
+        {
+            currentWeaponName = "Escopeta";
+        }
+        else if (type == WeaponType.MachineGun)
+        {
+            currentWeaponName = "Ametralladora";
+        }
+
+        UpdateUI();
+        Debug.Log($"¡Arma equipada: {currentWeaponName}! Balas: {currentAmmo}");
+    }
+
+    void SetDefaultPistol()
+    {
+        isSpecialWeapon = false;
+        currentWeaponName = "Pistola";
+        currentDamage = pistolDamage;
+        maxAmmo = pistolMaxAmmo;
+        currentAmmo = maxAmmo;
+        reloadTime = pistolReloadTime;
+        UpdateUI();
+    }
+
+    IEnumerator Reload()
+    {
+        isReloading = true;
+        if (ammoText != null) ammoText.text = "RECARGANDO...";
+
+        yield return new WaitForSeconds(reloadTime);
+
+        currentAmmo = maxAmmo;
+        isReloading = false;
+        UpdateUI();
+    }
+
     void UpdateUI()
     {
         if (ammoText != null)
         {
-            ammoText.text = "BALAS: " + currentAmmo + " / " + maxAmmo;
+            ammoText.text = $"{currentWeaponName}: {currentAmmo} / {maxAmmo}";
         }
     }
 }

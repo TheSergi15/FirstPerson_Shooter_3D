@@ -28,32 +28,26 @@ public class WeaponAim : MonoBehaviour
     {
         if (Mouse.current != null)
         {
-            // Leemos la posición actual de tu puntero en la pantalla[cite: 1]
             Vector2 mousePos = Mouse.current.position.ReadValue();
-
-            // Creamos un rayo desde la cámara pasando por el puntero
             Ray ray = mainCamera.ScreenPointToRay(mousePos);
             Vector3 targetPoint;
             RaycastHit hit;
 
-            // Lanzamos el rayo para saber exactamente qué punto 3D estamos mirando[cite: 2]
             if (Physics.Raycast(ray, out hit, maxDistance, aimLayerMask))
             {
-                targetPoint = hit.point; // El arma mirará al punto de impacto
+                targetPoint = hit.point;
+                // Muestra en consola el culpable del impacto prematuro
+                Debug.Log("El arma está chocando contra: " + hit.collider.gameObject.name);
+                // Dibuja una línea roja en la pestaña Scene para ver el trayecto
+                Debug.DrawLine(ray.origin, hit.point, Color.red);
             }
             else
             {
-                // Si apuntamos al cielo o al vacío, mirará hacia el fondo del rayo
                 targetPoint = ray.GetPoint(maxDistance);
             }
 
-            // Calculamos la dirección matemática hacia ese objetivo
             Vector3 aimDirection = targetPoint - transform.position;
-
-            // Calculamos la rotación necesaria
             Quaternion targetRotation = Quaternion.LookRotation(aimDirection);
-
-            // Rotamos el arma de forma suave usando Slerp[cite: 1]
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * aimSpeed);
         }
     }
