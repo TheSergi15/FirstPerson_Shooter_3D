@@ -95,9 +95,6 @@ PrefabInstance:
       addedObject: {fileID: 102298956363978041}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 115ab982b626e7f4281fb190244f181e, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 6493210852452179844}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 115ab982b626e7f4281fb190244f181e, type: 3}
-      insertIndex: -1
       addedObject: {fileID: 755685982561372717}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 115ab982b626e7f4281fb190244f181e, type: 3}
       insertIndex: -1
@@ -129,37 +126,6 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.030685108, y: 0.264298, z: 0.8880977}
   m_Center: {x: 0.0025469176, y: -0.07714929, z: 0.12151787}
---- !u!114 &6493210852452179844
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8537514379385918128}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a0199a98b2bad62459f806d31daf1c55, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectileGun
-  projectilePrefab: {fileID: 7797300411802682859, guid: fb04ec5fb2f461540a426542499ab299, type: 3}
-  firePoint: {fileID: 6277922669213015531}
-  playerCamera: {fileID: 0}
-  aimMask:
-    serializedVersion: 2
-    m_Bits: 119
-  projectileSpeed: 30
-  damage: 25
-  fireRate: 1.5
-  automatic: 0
-  spread: 0.1
-  aimDistance: 100
-  magazineSize: 6
-  reserveAmmo: 24
-  reloadTime: 2
-  muzzleFlash: {fileID: 0}
-  audioSource: {fileID: 0}
-  shootClip: {fileID: 8300000, guid: a4cd7f906e7f8ce468a39268bbd81bb9, type: 3}
-  reloadClip: {fileID: 8300000, guid: 56d230face4141e4dadd394b36ee00fd, type: 3}
 --- !u!54 &755685982561372717
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -199,7 +165,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 43062b7f19a1fb14890265fbaa3533b7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PIckUpController
-  gunScript: {fileID: 6493210852452179844}
+  gunScript: {fileID: 0}
   rb: {fileID: 755685982561372717}
   coll: {fileID: 102298956363978041}
   player: {fileID: 3985688650110840062, guid: 993a4600f9e174346a834374ab292bb9, type: 3}

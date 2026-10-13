@@ -3,7 +3,7 @@ using UnityEngine.InputSystem;
 
 public class PickUpController : MonoBehaviour
 {
-    public ProjectileGun gunScript;
+    public Gun gunScript;
     public Rigidbody rb;
     public BoxCollider coll;
     public Transform player, gunContainer, fpsCam;
