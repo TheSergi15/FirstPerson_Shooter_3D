@@ -99,6 +99,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 115ab982b626e7f4281fb190244f181e, type: 3}
       insertIndex: -1
       addedObject: {fileID: 7461432974218390838}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 115ab982b626e7f4281fb190244f181e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8393013960344496675}
   m_SourcePrefab: {fileID: 100100000, guid: 115ab982b626e7f4281fb190244f181e, type: 3}
 --- !u!1 &8537514379385918128 stripped
 GameObject:
@@ -175,6 +178,40 @@ MonoBehaviour:
   dropForwardForce: 0
   dropUpwardForce: 0
   equipped: 0
+--- !u!114 &8393013960344496675
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8537514379385918128}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c5bed7223e8e7048aa1bd9088f280a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Gun
+  projectilePrefab: {fileID: 7797300411802682859, guid: fb04ec5fb2f461540a426542499ab299, type: 3}
+  firePoint: {fileID: 6277922669213015531}
+  playerCamera: {fileID: 0}
+  aimMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  fireMode: 0
+  projectileSpeed: 30
+  damage: 25
+  fireRate: 1.5
+  automatic: 0
+  spread: 0
+  aimDistance: 100
+  magazineSize: 6
+  reserveAmmo: 24
+  reloadTime: 2
+  muzzleFlash: {fileID: 0}
+  impactEffectPrefab: {fileID: 0}
+  audioSource: {fileID: 0}
+  shootClip: {fileID: 0}
+  reloadClip: {fileID: 0}
+  ammoText: {fileID: 0}
 --- !u!4 &9020860363295819786 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 115ab982b626e7f4281fb190244f181e, type: 3}

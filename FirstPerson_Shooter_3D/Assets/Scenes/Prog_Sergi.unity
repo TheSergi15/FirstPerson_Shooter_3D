@@ -119,6 +119,11 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!4 &2475711 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 253958143526096, guid: 993a4600f9e174346a834374ab292bb9, type: 3}
+  m_PrefabInstance: {fileID: 2024732251}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &14822432
 GameObject:
   m_ObjectHideFlags: 0
@@ -420,6 +425,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 9020860363295819786, guid: 5487115ccf8c77b44ab4b236f5ce4bf8, type: 3}
   m_PrefabInstance: {fileID: 1506022167}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &402044491 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8393013960344496675, guid: 5487115ccf8c77b44ab4b236f5ce4bf8, type: 3}
+  m_PrefabInstance: {fileID: 1506022167}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c5bed7223e8e7048aa1bd9088f280a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Gun
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -1652,7 +1668,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1449030211
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1876,6 +1892,38 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 507332652}
     m_Modifications:
+    - target: {fileID: 7461432974218390838, guid: 5487115ccf8c77b44ab4b236f5ce4bf8, type: 3}
+      propertyPath: fpsCam
+      value: 
+      objectReference: {fileID: 1833697644}
+    - target: {fileID: 7461432974218390838, guid: 5487115ccf8c77b44ab4b236f5ce4bf8, type: 3}
+      propertyPath: gunScript
+      value: 
+      objectReference: {fileID: 402044491}
+    - target: {fileID: 7461432974218390838, guid: 5487115ccf8c77b44ab4b236f5ce4bf8, type: 3}
+      propertyPath: pickUpRange
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 7461432974218390838, guid: 5487115ccf8c77b44ab4b236f5ce4bf8, type: 3}
+      propertyPath: gunContainer
+      value: 
+      objectReference: {fileID: 2475711}
+    - target: {fileID: 7461432974218390838, guid: 5487115ccf8c77b44ab4b236f5ce4bf8, type: 3}
+      propertyPath: dropUpwardForce
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 7461432974218390838, guid: 5487115ccf8c77b44ab4b236f5ce4bf8, type: 3}
+      propertyPath: dropForwardForce
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 8393013960344496675, guid: 5487115ccf8c77b44ab4b236f5ce4bf8, type: 3}
+      propertyPath: ammoText
+      value: 
+      objectReference: {fileID: 565333285}
+    - target: {fileID: 8393013960344496675, guid: 5487115ccf8c77b44ab4b236f5ce4bf8, type: 3}
+      propertyPath: playerCamera
+      value: 
+      objectReference: {fileID: 1833697641}
     - target: {fileID: 8537514379385918128, guid: 5487115ccf8c77b44ab4b236f5ce4bf8, type: 3}
       propertyPath: m_Name
       value: AK47
@@ -2100,6 +2148,16 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!20 &1833697641 stripped
+Camera:
+  m_CorrespondingSourceObject: {fileID: 1685310076147521442, guid: 993a4600f9e174346a834374ab292bb9, type: 3}
+  m_PrefabInstance: {fileID: 2024732251}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1833697644 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4880325975444796896, guid: 993a4600f9e174346a834374ab292bb9, type: 3}
+  m_PrefabInstance: {fileID: 2024732251}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1890607278
 GameObject:
   m_ObjectHideFlags: 0

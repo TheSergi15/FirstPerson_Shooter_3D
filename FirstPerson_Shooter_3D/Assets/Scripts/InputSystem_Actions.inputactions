@@ -60,7 +60,7 @@
                     "name": "Jump",
                     "type": "Button",
                     "id": "f1ba0d36-48eb-4cd5-b651-1c94a6531f70",
-                    "expectedControlType": "Button",
+                    "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false,
@@ -87,7 +87,7 @@
                     "priority": 0
                 },
                 {
-                    "name": "Sprint",
+                    "name": "Catch",
                     "type": "Button",
                     "id": "641cd816-40e6-41b4-8c3d-04687c349290",
                     "expectedControlType": "",
@@ -378,7 +378,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "Keyboard&Mouse",
-                    "action": "Sprint",
+                    "action": "Catch",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -389,7 +389,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "Gamepad",
-                    "action": "Sprint",
+                    "action": "Catch",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -400,7 +400,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "XR",
-                    "action": "Sprint",
+                    "action": "Catch",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -517,7 +517,7 @@
                 {
                     "name": "",
                     "id": "7b5004d6-35e3-4dbd-9a04-ab456eb96640",
-                    "path": "<Keyboard>/r",
+                    "path": "<Mouse>/rightButton",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
