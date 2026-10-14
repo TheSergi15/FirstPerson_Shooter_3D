@@ -1898,7 +1898,7 @@ PrefabInstance:
       objectReference: {fileID: 1833697644}
     - target: {fileID: 7461432974218390838, guid: 5487115ccf8c77b44ab4b236f5ce4bf8, type: 3}
       propertyPath: equipped
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7461432974218390838, guid: 5487115ccf8c77b44ab4b236f5ce4bf8, type: 3}
       propertyPath: gunScript
