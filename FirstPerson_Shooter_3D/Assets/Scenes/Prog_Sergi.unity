@@ -1897,12 +1897,16 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1833697644}
     - target: {fileID: 7461432974218390838, guid: 5487115ccf8c77b44ab4b236f5ce4bf8, type: 3}
+      propertyPath: equipped
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7461432974218390838, guid: 5487115ccf8c77b44ab4b236f5ce4bf8, type: 3}
       propertyPath: gunScript
       value: 
       objectReference: {fileID: 402044491}
     - target: {fileID: 7461432974218390838, guid: 5487115ccf8c77b44ab4b236f5ce4bf8, type: 3}
       propertyPath: pickUpRange
-      value: 2
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 7461432974218390838, guid: 5487115ccf8c77b44ab4b236f5ce4bf8, type: 3}
       propertyPath: gunContainer
@@ -1921,9 +1925,17 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 565333285}
     - target: {fileID: 8393013960344496675, guid: 5487115ccf8c77b44ab4b236f5ce4bf8, type: 3}
+      propertyPath: fireMode
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8393013960344496675, guid: 5487115ccf8c77b44ab4b236f5ce4bf8, type: 3}
       propertyPath: playerCamera
       value: 
       objectReference: {fileID: 1833697641}
+    - target: {fileID: 8393013960344496675, guid: 5487115ccf8c77b44ab4b236f5ce4bf8, type: 3}
+      propertyPath: aimMask.m_Bits
+      value: 128
+      objectReference: {fileID: 0}
     - target: {fileID: 8537514379385918128, guid: 5487115ccf8c77b44ab4b236f5ce4bf8, type: 3}
       propertyPath: m_Name
       value: AK47
