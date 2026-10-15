@@ -5,22 +5,22 @@ using TMPro;
 
 public class Gun : MonoBehaviour
 {
-    public enum FireMode { Projectile, Hitscan }
-
     [Header("Referencias")]
-    [SerializeField] private Projectile projectilePrefab;   // Solo se usa en modo Projectile
-    [SerializeField] private Transform firePoint;           // Punta del cañón
     [SerializeField] private Camera playerCamera;           // Si está vacía, usa Camera.main
     [SerializeField] private LayerMask aimMask = ~0;        // Quita aquí la capa del jugador
 
-    [Header("Disparo")]
-    [SerializeField] private FireMode fireMode = FireMode.Projectile;
-    [SerializeField] private float projectileSpeed = 30f;
+    [Header("Disparo (hitscan)")]
     [SerializeField] private float damage = 25f;
     [SerializeField] private float fireRate = 1.5f;         // Disparos por segundo
     [SerializeField] private bool automatic = false;        // Mantener pulsado para disparar
     [SerializeField, Range(0f, 0.1f)] private float spread = 0f;
-    [SerializeField] private float aimDistance = 100f;      // Alcance del raycast / de la mira
+    [SerializeField] private float aimDistance = 100f;      // Alcance del disparo
+    [SerializeField] private bool aimWithCursor = true;     // Apunta con el puntero; si no, con el centro de la pantalla
+
+    [Header("Apuntado del arma")]
+    [SerializeField] private bool aimWeaponAtCursor = true;
+    [SerializeField] private float aimSpeed = 15f;          // Más alto = sigue al puntero más rápido
+    [SerializeField] private float maxAimAngle = 45f;       // Giro máximo respecto a su posición base
 
     [Header("Munición")]
     [SerializeField] private int magazineSize = 6;
@@ -29,7 +29,7 @@ public class Gun : MonoBehaviour
 
     [Header("Efectos")]
     [SerializeField] private ParticleSystem muzzleFlash;
-    [SerializeField] private GameObject impactEffectPrefab; // Solo en modo Hitscan
+    [SerializeField] private GameObject impactEffectPrefab;
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip shootClip;
     [SerializeField] private AudioClip reloadClip;
@@ -42,6 +42,8 @@ public class Gun : MonoBehaviour
     private float nextFireTime;
     private bool triggerHeld;
     private bool isReloading;
+
+    private readonly RaycastHit[] hits = new RaycastHit[16];
 
     public int AmmoInMag => ammoInMag;
     public int ReserveAmmo => reserveAmmo;
@@ -62,9 +64,17 @@ public class Gun : MonoBehaviour
         if (triggerHeld && automatic) TryShoot();
     }
 
-    // Eventos del PlayerInput (Invoke Unity Events)
+    // Va en LateUpdate para que ninguna animación pise el giro del arma
+    private void LateUpdate()
+    {
+        if (aimWeaponAtCursor) AimWeaponAtCursor();
+    }
+
+    // ---------- INPUT (eventos del PlayerInput, Invoke Unity Events) ----------
     public void OnFire(InputAction.CallbackContext ctx)
     {
+        if (!enabled) return;   // El arma no equipada no dispara
+
         if (ctx.started)
         {
             triggerHeld = true;
@@ -78,9 +88,11 @@ public class Gun : MonoBehaviour
 
     public void OnReload(InputAction.CallbackContext ctx)
     {
+        if (!enabled) return;
         if (ctx.performed) Reload();
     }
 
+    // ---------- DISPARO ----------
     private void TryShoot()
     {
         if (isReloading || Time.time < nextFireTime) return;
@@ -100,61 +112,44 @@ public class Gun : MonoBehaviour
         ammoInMag--;
         UpdateUI();
 
-        if (fireMode == FireMode.Projectile) ShootProjectile();
-        else ShootHitscan();
+        Ray ray = GetAimRay();
+
+        if (RaycastIgnoringSelf(ray, out RaycastHit hit))
+        {
+            if (impactEffectPrefab != null)
+            {
+                GameObject fx = Instantiate(impactEffectPrefab, hit.point,
+                                            Quaternion.LookRotation(hit.normal));
+                Destroy(fx, 2f);
+            }
+
+            // Daño a enemigos
+            if (hit.transform.TryGetComponent(out EnemyHealth enemy))
+                enemy.TakeDamage(damage);
+
+            // Curación
+            if (hit.transform.TryGetComponent(out HealthPickup pickup))
+                pickup.OnShot();
+        }
 
         if (muzzleFlash) muzzleFlash.Play();
         if (audioSource && shootClip) audioSource.PlayOneShot(shootClip);
     }
 
-    // ---------- MODO PROYECTIL ----------
-    private void ShootProjectile()
+    // Rayo desde el puntero (o el centro de la pantalla), sin dispersión
+    private Ray GetCursorRay()
     {
-        if (projectilePrefab == null || firePoint == null) return;
+        Vector2 screenPoint = (aimWithCursor && Mouse.current != null)
+            ? Mouse.current.position.ReadValue()
+            : new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
 
-        Ray ray = GetAimRay();
-
-        // El proyectil sale del cañón pero apunta a donde mira la cámara
-        Vector3 target = Physics.Raycast(ray, out RaycastHit hit, aimDistance,
-                                         aimMask, QueryTriggerInteraction.Ignore)
-            ? hit.point
-            : ray.GetPoint(aimDistance);
-
-        Vector3 dir = (target - firePoint.position).normalized;
-
-        Projectile p = Instantiate(projectilePrefab, firePoint.position,
-                                   Quaternion.LookRotation(dir));
-        p.Launch(projectileSpeed, damage);
+        return playerCamera.ScreenPointToRay(screenPoint);
     }
 
-    // ---------- MODO HITSCAN ----------
-    private void ShootHitscan()
-    {
-        Ray ray = GetAimRay();
-
-        // Sin QueryTriggerInteraction a propósito: así sigue detectando pickups con collider trigger
-        if (!Physics.Raycast(ray, out RaycastHit hit, aimDistance, aimMask)) return;
-
-        if (impactEffectPrefab != null)
-        {
-            GameObject fx = Instantiate(impactEffectPrefab, hit.point,
-                                        Quaternion.LookRotation(hit.normal));
-            Destroy(fx, 2f);
-        }
-
-        // Daño a enemigos
-        if (hit.transform.TryGetComponent(out EnemyHealth enemy))
-            enemy.TakeDamage(damage);
-
-        // Curación
-        if (hit.transform.TryGetComponent(out HealthPickup pickup))
-            pickup.OnShot();
-    }
-
-    // Rayo desde el centro de la pantalla (la mira), con dispersión opcional
+    // Rayo del disparo: el del puntero más la dispersión opcional
     private Ray GetAimRay()
     {
-        Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+        Ray ray = GetCursorRay();
 
         if (spread > 0f)
         {
@@ -164,6 +159,54 @@ public class Gun : MonoBehaviour
             ray.direction = dir.normalized;
         }
         return ray;
+    }
+
+    // Impacto más cercano que no sea el propio arma
+    // (el collider del arma equipada puede quedar delante del puntero y "comerse" el disparo)
+    private bool RaycastIgnoringSelf(Ray ray, out RaycastHit result)
+    {
+        int count = Physics.RaycastNonAlloc(ray, hits, aimDistance, aimMask);
+        float closest = float.MaxValue;
+        bool found = false;
+        result = default;
+
+        for (int i = 0; i < count; i++)
+        {
+            if (hits[i].transform.IsChildOf(transform)) continue;
+
+            if (hits[i].distance < closest)
+            {
+                closest = hits[i].distance;
+                result = hits[i];
+                found = true;
+            }
+        }
+        return found;
+    }
+
+    // ---------- APUNTADO DEL ARMA ----------
+    // El arma gira hacia el mismo punto al que llega el disparo
+    private void AimWeaponAtCursor()
+    {
+        if (playerCamera == null || transform.parent == null) return;
+
+        Ray ray = GetCursorRay();
+        Vector3 target = RaycastIgnoringSelf(ray, out RaycastHit hit)
+            ? hit.point
+            : ray.GetPoint(aimDistance);
+
+        // Dirección desde el arma hasta ese punto, en el espacio del contenedor
+        Vector3 toTarget = target - transform.position;
+        if (toTarget.sqrMagnitude < 0.0001f) return;
+
+        Vector3 localDir = transform.parent.InverseTransformDirection(toTarget.normalized);
+        Quaternion targetRot = Quaternion.LookRotation(localDir);
+
+        // Limita cuánto puede girar respecto a su posición base
+        targetRot = Quaternion.RotateTowards(Quaternion.identity, targetRot, maxAimAngle);
+
+        transform.localRotation = Quaternion.Slerp(
+            transform.localRotation, targetRot, aimSpeed * Time.deltaTime);
     }
 
     // ---------- RECARGA ----------
@@ -197,7 +240,7 @@ public class Gun : MonoBehaviour
             : $"BALAS: {ammoInMag} / {reserveAmmo}";
     }
 
-    // Si se cambia de arma a mitad de recarga, se cancela
+    // Si se suelta el arma a mitad de recarga, se cancela
     private void OnDisable()
     {
         isReloading = false;

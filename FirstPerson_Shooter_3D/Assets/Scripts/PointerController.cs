@@ -1,13 +1,17 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 public class PointerController : MonoBehaviour
 {
     private RectTransform pointerRect;
+    private Graphic[] graphics;
+    private bool pointerShown;
 
     void Start()
     {
         pointerRect = GetComponent<RectTransform>();
+        graphics = GetComponentsInChildren<Graphic>(true);
 
         // Ocultamos el cursor de Windows/Mac
         Cursor.visible = false;
@@ -15,32 +19,35 @@ public class PointerController : MonoBehaviour
         // Confinamos el cursor para que no pueda salir de la ventana del juego
         Cursor.lockState = CursorLockMode.Confined;
 
-        // --- NUEVO: Forzamos el ratón físico al centro de la pantalla al iniciar ---
+        // Forzamos el ratón físico al centro de la pantalla al iniciar
         if (Mouse.current != null)
         {
             Vector2 centerPosition = new Vector2(Screen.width / 2f, Screen.height / 2f);
-
-            // Movemos el cursor del sistema operativo
             Mouse.current.WarpCursorPosition(centerPosition);
-
-            // Actualizamos la posición visual de la imagen inmediatamente
             pointerRect.position = centerPosition;
         }
+
+        SetPointerVisible(PickUpController.slotFull);
     }
 
     void Update()
     {
+        // El puntero solo se ve mientras hay un arma equipada
+        if (PickUpController.slotFull != pointerShown)
+            SetPointerVisible(PickUpController.slotFull);
+
         if (Mouse.current != null)
         {
-            // Leemos la posición actual del ratón en la pantalla
             Vector2 mousePos = Mouse.current.position.ReadValue();
-
-            // Limitamos las coordenadas al tamaño exacto de la pantalla por seguridad
             mousePos.x = Mathf.Clamp(mousePos.x, 0, Screen.width);
             mousePos.y = Mathf.Clamp(mousePos.y, 0, Screen.height);
-
-            // Movemos la imagen del Canvas a esa posición
             pointerRect.position = mousePos;
         }
+    }
+
+    private void SetPointerVisible(bool visible)
+    {
+        pointerShown = visible;
+        foreach (Graphic g in graphics) g.enabled = visible;
     }
 }
