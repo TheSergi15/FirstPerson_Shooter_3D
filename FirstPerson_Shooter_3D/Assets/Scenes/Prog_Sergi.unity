@@ -1636,7 +1636,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1449030211
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1869,6 +1869,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 2073706879}
     - target: {fileID: 7461432974218390838, guid: 5487115ccf8c77b44ab4b236f5ce4bf8, type: 3}
+      propertyPath: debugLog
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7461432974218390838, guid: 5487115ccf8c77b44ab4b236f5ce4bf8, type: 3}
       propertyPath: equipped
       value: 0
       objectReference: {fileID: 0}
@@ -1901,12 +1905,24 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8393013960344496675, guid: 5487115ccf8c77b44ab4b236f5ce4bf8, type: 3}
+      propertyPath: rollDegrees
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8393013960344496675, guid: 5487115ccf8c77b44ab4b236f5ce4bf8, type: 3}
       propertyPath: playerCamera
       value: 
       objectReference: {fileID: 1833697641}
     - target: {fileID: 8393013960344496675, guid: 5487115ccf8c77b44ab4b236f5ce4bf8, type: 3}
       propertyPath: aimMask.m_Bits
       value: 128
+      objectReference: {fileID: 0}
+    - target: {fileID: 8393013960344496675, guid: 5487115ccf8c77b44ab4b236f5ce4bf8, type: 3}
+      propertyPath: barrelPointsTo
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8393013960344496675, guid: 5487115ccf8c77b44ab4b236f5ce4bf8, type: 3}
+      propertyPath: reloadWithRightClick
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8537514379385918128, guid: 5487115ccf8c77b44ab4b236f5ce4bf8, type: 3}
       propertyPath: m_Name

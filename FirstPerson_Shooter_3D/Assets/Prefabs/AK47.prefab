@@ -168,7 +168,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 43062b7f19a1fb14890265fbaa3533b7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PIckUpController
-  gunScript: {fileID: 0}
+  gunScript: {fileID: 8393013960344496675}
   rb: {fileID: 755685982561372717}
   coll: {fileID: 102298956363978041}
   player: {fileID: 3985688650110840062, guid: 993a4600f9e174346a834374ab292bb9, type: 3}
@@ -200,6 +200,8 @@ MonoBehaviour:
   aimMask:
     serializedVersion: 2
     m_Bits: 4294967295
+  reloadWithRightClick: 1
+  reloadKey: 32
   damage: 25
   fireRate: 1.5
   automatic: 0
@@ -209,6 +211,8 @@ MonoBehaviour:
   aimWeaponAtCursor: 1
   aimSpeed: 15
   maxAimAngle: 45
+  barrelPointsTo: 0
+  rollDegrees: 0
   magazineSize: 6
   reserveAmmo: 24
   reloadTime: 2
@@ -218,6 +222,7 @@ MonoBehaviour:
   shootClip: {fileID: 0}
   reloadClip: {fileID: 0}
   ammoText: {fileID: 0}
+  debugLog: 1
 --- !u!4 &9020860363295819786 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 115ab982b626e7f4281fb190244f181e, type: 3}

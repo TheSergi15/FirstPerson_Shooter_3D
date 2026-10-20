@@ -1,4 +1,3 @@
-
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -16,7 +15,7 @@ public class PickUpController : MonoBehaviour
 
     [Header("Posición al equipar (relativa al Gun Container)")]
     public Vector3 equippedPosition = Vector3.zero;
-    public Vector3 equippedRotation = Vector3.zero;   // Grados (Euler)
+    public Vector3 equippedRotation = Vector3.zero;   // Solo vale para el primer instante: luego el Gun apunta al puntero
 
     [Header("Lanzar")]
     public Key throwKey = Key.Q;
@@ -45,6 +44,9 @@ public class PickUpController : MonoBehaviour
     private float nextPickUpTime;
     private Vector3 lastPlayerPos;
     private Vector3 playerVelocity;
+    private Vector3 baseScale;
+    private RigidbodyInterpolation originalInterpolation;
+    private Camera cam;
     private bool warnedNoKeyboard;
     private bool quitting;
 
@@ -72,6 +74,28 @@ public class PickUpController : MonoBehaviour
         if (pickUpRange <= 0f)
             Debug.LogWarning($"{name}: pickUpRange es 0, nunca se podrá recoger.", this);
 
+        // Si el contenedor no cuelga del jugador, el arma no seguirá al jugador cuando se mueva por los raíles
+        if (!gunContainer.IsChildOf(player))
+            Debug.LogWarning($"[PickUp] '{gunContainer.name}' (Gun Container) NO es hijo de '{player.name}' (player). " +
+                             "Si los raíles mueven al jugador, el arma se quedará atrás. " +
+                             "Arrastra el Gun Container dentro del objeto que se mueve por los raíles.", this);
+
+        // Escala original del arma (para no deformarla al equiparla)
+        baseScale = transform.localScale;
+
+        // Interpolación original del Rigidbody (se desactiva mientras el arma está equipada)
+        originalInterpolation = rb.interpolation;
+
+        // Cámara que usan el disparo, el apuntado y el lanzamiento
+        cam = fpsCam.GetComponent<Camera>();
+        if (cam == null) cam = fpsCam.GetComponentInChildren<Camera>();
+        if (cam == null) cam = Camera.main;
+        if (cam == null)
+            Debug.LogError($"{name}: no se encuentra ninguna cámara. Asigna 'fpsCam' a la cámara o etiquétala como MainCamera.", this);
+
+        // El Gun necesita saber quién es el dueño y qué cámara usar
+        gunScript.SetOwner(player, cam);
+
         // El arma lanzada no debe chocar con ningún collider del jugador (raíz e hijos)
         foreach (Collider playerCol in player.GetComponentsInChildren<Collider>())
         {
@@ -81,12 +105,21 @@ public class PickUpController : MonoBehaviour
 
         lastPlayerPos = player.position;
 
+        // Si el arma empieza equipada pero no cuelga del contenedor, la colgamos aquí
+        // (si no, no seguiría al jugador ni apuntaría al puntero)
+        if (equipped && transform.parent != gunContainer)
+            AttachToContainer();
+
         // Setup
         gunScript.enabled = equipped;
         rb.isKinematic = equipped;
         coll.isTrigger = equipped;
 
-        if (equipped) slotFull = true;
+        if (equipped)
+        {
+            rb.interpolation = RigidbodyInterpolation.None;
+            slotFull = true;
+        }
 
         if (debugLog)
             Debug.Log($"[PickUp] {name} listo -> equipped={equipped}, slotFull={slotFull}, rango={pickUpRange}, jugador='{player.name}', tecla={pickUpKey}", this);
@@ -161,19 +194,40 @@ public class PickUpController : MonoBehaviour
         PickUp();
     }
 
+    // Red de seguridad: si algo despega el arma del contenedor mientras está equipada, se vuelve a colgar
+    private void LateUpdate()
+    {
+        if (equipped && transform.parent != gunContainer)
+        {
+            if (debugLog)
+                Debug.LogWarning($"[PickUp] {name}: el arma equipada ya no era hija de '{gunContainer.name}'; se vuelve a colgar.", this);
+            AttachToContainer();
+        }
+    }
+
+    // Cuelga el arma del contenedor y la coloca en la posición/rotación configurada
+    private void AttachToContainer()
+    {
+        transform.SetParent(gunContainer, false);
+        transform.localPosition = equippedPosition;
+        transform.localRotation = Quaternion.Euler(equippedRotation);
+        transform.localScale = baseScale;
+    }
+
     private void PickUp()
     {
         equipped = true;
         slotFull = true;
 
-        // Hacer el arma hija del contenedor y colocarla en la posición/rotación configurada
-        transform.SetParent(gunContainer);
-        transform.localPosition = equippedPosition;
-        transform.localRotation = Quaternion.Euler(equippedRotation);
-        transform.localScale = Vector3.one;
+        AttachToContainer();
 
+        rb.linearVelocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
         rb.isKinematic = true;
         coll.isTrigger = true;
+
+        // Un Rigidbody con interpolación, hijo de algo que se mueve, se va quedando atrás
+        rb.interpolation = RigidbodyInterpolation.None;
 
         gunScript.enabled = true;
 
@@ -187,18 +241,23 @@ public class PickUpController : MonoBehaviour
         slotFull = false;
         nextPickUpTime = Time.time + pickUpCooldown;
 
+        // Primero se desactiva el Gun: cancela recarga y deja de apuntar
+        gunScript.enabled = false;
+
         transform.SetParent(null);
 
         rb.isKinematic = false;
         coll.isTrigger = false;
+        rb.interpolation = originalInterpolation;
 
         // Hereda la velocidad del jugador para no quedarse atrás en los raíles
         // (en Unity anteriores a Unity 6, usa rb.velocity)
         rb.linearVelocity = playerVelocity;
 
         // Fuerza de lanzamiento
+        Vector3 up = fpsCam != null ? fpsCam.up : Vector3.up;
         rb.AddForce(GetThrowDirection() * dropForwardForce, ForceMode.Impulse);
-        rb.AddForce(fpsCam.up * dropUpwardForce, ForceMode.Impulse);
+        rb.AddForce(up * dropUpwardForce, ForceMode.Impulse);
 
         // Rotación aleatoria
         rb.AddTorque(new Vector3(
@@ -206,23 +265,14 @@ public class PickUpController : MonoBehaviour
             Random.Range(-1f, 1f),
             Random.Range(-1f, 1f)) * 10f);
 
-        gunScript.enabled = false;
-
         if (debugLog) Debug.Log($"[PickUp] {name}: LANZADA", this);
     }
 
     // Hacia donde apunta el cursor; si no hay cámara o ratón, hacia delante
     private Vector3 GetThrowDirection()
     {
-        if (fpsCam.TryGetComponent(out Camera cam) && Mouse.current != null)
+        if (cam != null && Mouse.current != null)
             return cam.ScreenPointToRay(Mouse.current.position.ReadValue()).direction;
         return fpsCam.forward;
-    }
-
-    // Selecciona el arma en la escena para ver el rango (esfera amarilla)
-    private void OnDrawGizmosSelected()
-    {
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, pickUpRange);
     }
 }
