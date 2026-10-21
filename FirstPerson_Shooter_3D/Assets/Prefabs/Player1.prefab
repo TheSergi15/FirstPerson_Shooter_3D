@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 3792887101774565007}
   - component: {fileID: 5928763025798746638}
   - component: {fileID: 4144403892198988787}
+  - component: {fileID: 2146720416874252360}
   m_Layer: 0
   m_Name: Player1
   m_TagString: Untagged
@@ -134,6 +135,30 @@ MonoBehaviour:
   flashSpeed: 5
   flashColor: {r: 1, g: 0, b: 0, a: 0.5}
   healColor: {r: 0, g: 1, b: 0, a: 0.5}
+--- !u!114 &2146720416874252360
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2762964749647146188}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e770f5429e66d254ab4f8953ecdec19c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GrenadeThrower
+  grenadePrefab: {fileID: 8727919601760837358, guid: 9f78aa364ca5ccd48ad7024be3f57c15, type: 3}
+  throwPoint: {fileID: 0}
+  aimCamera: {fileID: 0}
+  throwKey: 21
+  throwSpeed: 15
+  upwardBoost: 2.5
+  cooldown: 1
+  grenades: 5
+  useMouseAim: 1
+  aimMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!1 &5944051988441892769
 GameObject:
   m_ObjectHideFlags: 0
