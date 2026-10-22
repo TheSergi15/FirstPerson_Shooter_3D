@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using UnityEditor.Rendering.LookDev;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
@@ -11,9 +10,17 @@ public class Grenade : MonoBehaviour
 
     [Header("Explosión")]
     public float radius = 7f;
+
+    [Header("Daño a enemigos")]
+    [Tooltip("Dentro de este radio el enemigo muere de un solo golpe")]
+    public float killRadius = 3f;
+    public float killDamage = 9999f;
+    [Tooltip("Daño justo al salir del radio de muerte")]
     public float maxDamage = 100f;
-    [Tooltip("Daño según la distancia: eje X = 0 (centro) a 1 (borde del radio)")]
-    public AnimationCurve damageFalloff = AnimationCurve.Linear(0f, 1f, 1f, 0f);
+    [Tooltip("Daño en el borde del radio de explosión")]
+    public float minDamage = 25f;
+
+    [Header("Física")]
     [Tooltip("Impulso aplicado a los Rigidbody cercanos")]
     public float explosionForce = 15f;
     public float upwardsModifier = 0.5f;
@@ -29,6 +36,10 @@ public class Grenade : MonoBehaviour
     public float shakeIntensity = 0.6f;
     public float shakeRange = 25f;
 
+    [Header("Debug")]
+    [Tooltip("Muestra en la consola a quién ha dañado la granada")]
+    public bool debugLog = true;
+
     Rigidbody rb;
     float timer;
     bool exploded;
@@ -37,6 +48,11 @@ public class Grenade : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+    }
+
+    void OnValidate()
+    {
+        killRadius = Mathf.Min(killRadius, radius);
     }
 
     public void Launch(Vector3 velocity)
@@ -66,36 +82,48 @@ public class Grenade : MonoBehaviour
 
         Vector3 pos = transform.position;
 
-        // Ocultar la granada y quitar su collider para que no bloquee los raycasts
+        // Ocultar la granada y quitar sus colliders para que no bloqueen los raycasts
         foreach (var r in GetComponentsInChildren<Renderer>()) r.enabled = false;
         foreach (var c in GetComponentsInChildren<Collider>()) c.enabled = false;
         rb.isKinematic = true;
 
         var hits = Physics.OverlapSphere(pos, radius, affectedLayers, QueryTriggerInteraction.Ignore);
-        var damaged = new HashSet<EnemyHealth>();
+        var enemies = new Dictionary<EnemyHealth, float>();   // enemigo -> distancia mínima
         var pushed = new HashSet<Rigidbody>();
 
         foreach (var col in hits)
         {
-            if (!HasLineOfSight(pos, col)) continue;
+            EnemyHealth health = FindHealth(col);
+            if (!HasLineOfSight(pos, col, health)) continue;
 
-            float dist = Vector3.Distance(pos, col.ClosestPoint(pos));
-            float t = Mathf.Clamp01(dist / radius);
+            float dist = Vector3.Distance(pos, ClosestPointSafe(col, pos));
 
-            // Daño a enemigos (una sola vez por enemigo aunque tenga varios colliders)
-            var health = col.GetComponentInParent<EnemyHealth>();
-            if (health != null && damaged.Add(health))
+            // Nos quedamos con el collider más cercano de cada enemigo
+            if (health != null)
             {
-                float damage = maxDamage * damageFalloff.Evaluate(t);
-                health.TakeDamage(damage);
+                if (!enemies.TryGetValue(health, out float best) || dist < best)
+                    enemies[health] = dist;
             }
 
             // Física: empuja objetos con Rigidbody
             var body = col.attachedRigidbody;
             if (body != null && !body.isKinematic && pushed.Add(body))
-            {
                 body.AddExplosionForce(explosionForce, pos, radius, upwardsModifier, ForceMode.Impulse);
-            }
+        }
+
+        if (debugLog && enemies.Count == 0)
+            Debug.Log($"[Granada] Ningún enemigo afectado ({hits.Length} colliders dentro del radio)");
+
+        // Aplicar daño
+        foreach (var pair in enemies)
+        {
+            if (pair.Key == null) continue;
+
+            float damage = CalculateDamage(pair.Value);
+            if (debugLog)
+                Debug.Log($"[Granada] {pair.Key.name}: distancia {pair.Value:F1} -> daño {damage:F0}");
+
+            pair.Key.TakeDamage(damage);
         }
 
         // Efectos visuales
@@ -119,23 +147,81 @@ public class Grenade : MonoBehaviour
         Destroy(gameObject);
     }
 
-    bool HasLineOfSight(Vector3 origin, Collider target)
+    float CalculateDamage(float dist)
     {
-        Vector3 from = origin + Vector3.up * 0.1f;
-        Vector3 to = target.bounds.center;
+        if (dist <= killRadius) return killDamage;
+        float t = Mathf.InverseLerp(killRadius, radius, dist);
+        return Mathf.Lerp(maxDamage, minDamage, t);
+    }
 
-        if (Physics.Linecast(from, to, out RaycastHit hit, blockingLayers, QueryTriggerInteraction.Ignore))
+    static EnemyHealth FindHealth(Collider col)
+    {
+        var h = col.GetComponentInParent<EnemyHealth>();
+        if (h == null && col.attachedRigidbody != null)
+            h = col.attachedRigidbody.GetComponentInChildren<EnemyHealth>();
+        if (h == null)
+            h = col.GetComponentInChildren<EnemyHealth>();
+        return h;
+    }
+
+    // ClosestPoint falla con MeshCollider no convexos, CharacterController, etc.
+    static Vector3 ClosestPointSafe(Collider col, Vector3 point)
+    {
+        if (col is BoxCollider || col is SphereCollider || col is CapsuleCollider)
+            return col.ClosestPoint(point);
+        if (col is MeshCollider mc && mc.convex)
+            return col.ClosestPoint(point);
+        return col.bounds.ClosestPoint(point);
+    }
+
+    // Comprueba varios puntos del objetivo (centro, cabeza, pies) para que
+    // el suelo o el propio cuerpo del enemigo no bloqueen la explosión por error.
+    bool HasLineOfSight(Vector3 origin, Collider target, EnemyHealth owner)
+    {
+        Vector3 from = origin + Vector3.up * 0.15f;
+        Bounds b = target.bounds;
+
+        Vector3[] points =
         {
-            bool sameTarget = hit.collider == target ||
-                              (hit.rigidbody != null && hit.rigidbody == target.attachedRigidbody);
-            return sameTarget;
+            b.center,
+            new Vector3(b.center.x, b.max.y - 0.1f, b.center.z),
+            new Vector3(b.center.x, b.min.y + 0.1f, b.center.z)
+        };
+
+        foreach (var p in points)
+            if (IsClear(from, p, target, owner)) return true;
+
+        return false;
+    }
+
+    bool IsClear(Vector3 from, Vector3 to, Collider target, EnemyHealth owner)
+    {
+        Vector3 dir = to - from;
+        float dist = dir.magnitude;
+        if (dist < 0.01f) return true;
+
+        var hits = Physics.RaycastAll(from, dir / dist, dist, blockingLayers, QueryTriggerInteraction.Ignore);
+        foreach (var h in hits)
+        {
+            if (IsSameTarget(h.collider, target, owner)) continue;
+            return false;
         }
         return true;
+    }
+
+    static bool IsSameTarget(Collider c, Collider target, EnemyHealth owner)
+    {
+        if (c == target) return true;
+        if (owner != null && c.transform.IsChildOf(owner.transform)) return true;
+        if (target.attachedRigidbody != null && c.attachedRigidbody == target.attachedRigidbody) return true;
+        return false;
     }
 
     void OnDrawGizmosSelected()
     {
         Gizmos.color = new Color(1f, 0.4f, 0f, 0.35f);
         Gizmos.DrawWireSphere(transform.position, radius);
+        Gizmos.color = new Color(1f, 0f, 0f, 0.5f);
+        Gizmos.DrawWireSphere(transform.position, killRadius);
     }
 }
