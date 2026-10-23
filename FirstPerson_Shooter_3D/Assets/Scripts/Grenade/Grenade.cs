@@ -14,7 +14,7 @@ public class Grenade : MonoBehaviour
     [Header("Daño a enemigos")]
     [Tooltip("Dentro de este radio el enemigo muere de un solo golpe")]
     public float killRadius = 3f;
-    public float killDamage = 9999f;
+    public float killDamage = 100f;
     [Tooltip("Daño justo al salir del radio de muerte")]
     public float maxDamage = 100f;
     [Tooltip("Daño en el borde del radio de explosión")]
@@ -94,7 +94,7 @@ public class Grenade : MonoBehaviour
         foreach (var col in hits)
         {
             EnemyHealth health = FindHealth(col);
-            if (!HasLineOfSight(pos, col, health)) continue;
+            if (!HasLineOfSight(pos, col, health, blockingLayers)) continue;
 
             float dist = Vector3.Distance(pos, ClosestPointSafe(col, pos));
 
@@ -154,6 +154,50 @@ public class Grenade : MonoBehaviour
         return Mathf.Lerp(maxDamage, minDamage, t);
     }
 
+    // ---------- Lo usa el sistema de apuntado (GrenadeThrower) ----------
+    /// <summary>
+    /// Simula qué afectaría una explosión en 'pos' sin hacer daño: devuelve los enemigos
+    /// alcanzados y cuántas estructuras hay dentro del radio.
+    /// </summary>
+    public static void Scan(Vector3 pos, float radius, LayerMask affected, LayerMask blocking,
+                            LayerMask structures, Collider landing, Transform ignoreRoot,
+                            List<EnemyHealth> enemiesOut, out int structureCount)
+    {
+        enemiesOut.Clear();
+        structureCount = 0;
+
+        var hits = Physics.OverlapSphere(pos, radius, affected, QueryTriggerInteraction.Ignore);
+        foreach (var col in hits)
+        {
+            if (ignoreRoot != null && col.transform.IsChildOf(ignoreRoot)) continue;
+
+            EnemyHealth h = FindHealth(col);
+            if (!HasLineOfSight(pos, col, h, blocking)) continue;
+
+            if (h != null)
+            {
+                if (!enemiesOut.Contains(h)) enemiesOut.Add(h);
+                continue;
+            }
+
+            bool isStructure;
+            if (structures.value != 0)
+            {
+                // El usuario ha indicado qué capas son estructuras
+                isStructure = (structures.value & (1 << col.gameObject.layer)) != 0;
+            }
+            else
+            {
+                // Sin capas definidas: es estructura todo lo que sobresale del suelo
+                isStructure = col != landing &&
+                              !(col is TerrainCollider) &&
+                              col.bounds.max.y > pos.y + 0.5f;
+            }
+
+            if (isStructure) structureCount++;
+        }
+    }
+
     static EnemyHealth FindHealth(Collider col)
     {
         var h = col.GetComponentInParent<EnemyHealth>();
@@ -176,7 +220,7 @@ public class Grenade : MonoBehaviour
 
     // Comprueba varios puntos del objetivo (centro, cabeza, pies) para que
     // el suelo o el propio cuerpo del enemigo no bloqueen la explosión por error.
-    bool HasLineOfSight(Vector3 origin, Collider target, EnemyHealth owner)
+    static bool HasLineOfSight(Vector3 origin, Collider target, EnemyHealth owner, LayerMask blocking)
     {
         Vector3 from = origin + Vector3.up * 0.15f;
         Bounds b = target.bounds;
@@ -189,18 +233,18 @@ public class Grenade : MonoBehaviour
         };
 
         foreach (var p in points)
-            if (IsClear(from, p, target, owner)) return true;
+            if (IsClear(from, p, target, owner, blocking)) return true;
 
         return false;
     }
 
-    bool IsClear(Vector3 from, Vector3 to, Collider target, EnemyHealth owner)
+    static bool IsClear(Vector3 from, Vector3 to, Collider target, EnemyHealth owner, LayerMask blocking)
     {
         Vector3 dir = to - from;
         float dist = dir.magnitude;
         if (dist < 0.01f) return true;
 
-        var hits = Physics.RaycastAll(from, dir / dist, dist, blockingLayers, QueryTriggerInteraction.Ignore);
+        var hits = Physics.RaycastAll(from, dir / dist, dist, blocking, QueryTriggerInteraction.Ignore);
         foreach (var h in hits)
         {
             if (IsSameTarget(h.collider, target, owner)) continue;
