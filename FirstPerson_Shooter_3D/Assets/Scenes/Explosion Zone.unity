@@ -2359,6 +2359,10 @@ PrefabInstance:
       propertyPath: aimMask.m_Bits
       value: 247
       objectReference: {fileID: 0}
+    - target: {fileID: 2146720416874252360, guid: 993a4600f9e174346a834374ab292bb9, type: 3}
+      propertyPath: grenadeCastRadius
+      value: 0.04
+      objectReference: {fileID: 0}
     - target: {fileID: 2762964749647146188, guid: 993a4600f9e174346a834374ab292bb9, type: 3}
       propertyPath: m_Name
       value: Player1
