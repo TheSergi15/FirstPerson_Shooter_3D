@@ -22,6 +22,11 @@ public class PickUpController : MonoBehaviour
     public float dropForwardForce = 12f;
     public float dropUpwardForce = 2f;
 
+    // NUEVO
+    [Header("Avisos en pantalla")]
+    public WeaponControlsGuide guide;   // Opcional: si se deja vacío se busca en la escena
+    public string pickUpMessage = "Pulsa {0} para agarrar el arma";
+
     [Header("Depuración")]
     public bool debugLog = true;          // Desactívalo cuando todo funcione
 
@@ -49,6 +54,7 @@ public class PickUpController : MonoBehaviour
     private Camera cam;
     private bool warnedNoKeyboard;
     private bool quitting;
+    private bool promptShown;   // NUEVO
 
     // Reinicia el slot al entrar en Play, aunque el Domain Reload esté desactivado
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -79,6 +85,9 @@ public class PickUpController : MonoBehaviour
             Debug.LogWarning($"[PickUp] '{gunContainer.name}' (Gun Container) NO es hijo de '{player.name}' (player). " +
                              "Si los raíles mueven al jugador, el arma se quedará atrás. " +
                              "Arrastra el Gun Container dentro del objeto que se mueve por los raíles.", this);
+
+        // NUEVO: busca la guía de controles si no se ha asignado a mano
+        if (!guide) guide = FindFirstObjectByType<WeaponControlsGuide>();
 
         // Escala original del arma (para no deformarla al equiparla)
         baseScale = transform.localScale;
@@ -127,6 +136,9 @@ public class PickUpController : MonoBehaviour
 
     private void OnDisable()
     {
+        // NUEVO: si este arma estaba mostrando el aviso, lo quita
+        if (!quitting) HidePrompt();
+
         // La traza de este aviso en la consola muestra quién ha desactivado el script
         if (debugLog && !quitting)
             Debug.LogWarning($"[PickUp] {name}: PickUpController DESACTIVADO (mira la traza para ver quién)", this);
@@ -153,6 +165,9 @@ public class PickUpController : MonoBehaviour
         if (Time.deltaTime > 0f)
             playerVelocity = (player.position - lastPlayerPos) / Time.deltaTime;
         lastPlayerPos = player.position;
+
+        // NUEVO: aviso "Pulsa E para agarrar el arma"
+        UpdatePickUpPrompt();
 
         if (Keyboard.current == null)
         {
@@ -205,6 +220,36 @@ public class PickUpController : MonoBehaviour
         }
     }
 
+    // NUEVO: muestra el aviso solo cuando realmente se puede recoger
+    private void UpdatePickUpPrompt()
+    {
+        bool canPickUp = !equipped && !slotFull && Time.time >= nextPickUpTime
+                         && Vector3.Distance(player.position, transform.position) <= pickUpRange;
+
+        if (canPickUp && !promptShown) ShowPrompt();
+        else if (!canPickUp && promptShown) HidePrompt();
+    }
+
+    // NUEVO
+    private void ShowPrompt()
+    {
+        if (ControlsHintUI.Instance == null) return;
+
+        string text = string.Format(pickUpMessage, ControlsHintUI.Key(pickUpKey.ToString()));
+        ControlsHintUI.Instance.Show(text, 0f, true);   // 0 = se queda hasta ocultarlo
+        promptShown = true;
+    }
+
+    // NUEVO
+    private void HidePrompt()
+    {
+        if (!promptShown) return;
+        promptShown = false;
+
+        if (ControlsHintUI.Instance != null)
+            ControlsHintUI.Instance.Hide();
+    }
+
     // Cuelga el arma del contenedor y la coloca en la posición/rotación configurada
     private void AttachToContainer()
     {
@@ -231,6 +276,10 @@ public class PickUpController : MonoBehaviour
 
         gunScript.enabled = true;
 
+        // NUEVO: quita el aviso de recoger y enseña el resto de controles
+        HidePrompt();
+        if (guide) guide.PlayControls();
+
         if (debugLog) Debug.Log($"[PickUp] {name}: RECOGIDA", this);
     }
 
@@ -240,6 +289,9 @@ public class PickUpController : MonoBehaviour
         equipped = false;
         slotFull = false;
         nextPickUpTime = Time.time + pickUpCooldown;
+
+        // NUEVO: corta la guía de controles si seguía en marcha
+        if (guide) guide.StopGuide();
 
         // Primero se desactiva el Gun: cancela recarga y deja de apuntar
         gunScript.enabled = false;
