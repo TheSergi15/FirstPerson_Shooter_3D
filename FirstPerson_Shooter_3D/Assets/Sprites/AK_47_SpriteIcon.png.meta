@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: af5ea3fe66b3dc742a3d65d98f0a2a51
+guid: 9544260bb381d3248babe1993e7d5f2a
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 9139330975122868335
-    second: descarga_0
+      213: -4643950864415822830
+    second: AK_47_SpriteIcon_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -37,7 +37,7 @@ TextureImporter:
   maxTextureSize: 2048
   textureSettings:
     serializedVersion: 2
-    filterMode: 0
+    filterMode: 1
     aniso: 1
     mipBias: 0
     wrapU: 1
@@ -46,7 +46,7 @@ TextureImporter:
   nPOTScale: 0
   lightmap: 0
   compressionQuality: 50
-  spriteMode: 2
+  spriteMode: 1
   spriteExtrude: 1
   spriteMeshType: 1
   alignment: 0
@@ -113,23 +113,23 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: descarga_0
+      name: AK_47_SpriteIcon_0
       rect:
         serializedVersion: 2
         x: 0
-        y: 112
+        y: 0
         width: 637
-        height: 143
+        height: 358
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 57, y: 0, z: 59, w: 81}
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: f684ce0891d65de70800000000000000
-      internalID: 9139330975122868335
+      spriteID: 21c60242b4f5d8fb0800000000000000
+      internalID: -4643950864415822830
       vertices: []
       indices: 
       edges: []
@@ -138,7 +138,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 9fd7941a87049434290ce664fbd4441d
+    spriteID: 5e97eb03825dee720800000000000000
     internalID: 0
     vertices: []
     indices: 
@@ -148,7 +148,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      descarga_0: 9139330975122868335
+      AK_47_SpriteIcon_0: -4643950864415822830
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
