@@ -23,6 +23,10 @@ public class GrenadeThrower : MonoBehaviour
     public Camera aimCamera;
 
     [Header("Controles")]
+    [Header("Avisos en pantalla")]
+    public bool showAimHint = true;
+    [Tooltip("{0} = tecla de lanzar, {1} = tecla de cancelar")]
+    public string aimHintMessage = "Suelta {0} para lanzar  ·  {1} para cancelar";
     public Key throwKey = Key.G;
     public Key cancelKey = Key.X;
     [Tooltip("Mantén la tecla para apuntar y suéltala para lanzar. Si lo desmarcas, lanza al pulsar")]
@@ -142,6 +146,14 @@ public class GrenadeThrower : MonoBehaviour
         IsAiming = true;
         scanTimer = 0f;
         currentColor = neutralColor;
+
+        if (showAimHint && ControlsHintUI.Instance != null)
+        {
+            string text = string.Format(aimHintMessage,
+                ControlsHintUI.Key(throwKey.ToString()),
+                ControlsHintUI.Key(cancelKey.ToString()));
+            ControlsHintUI.Instance.Show(text, 0f, true);   // 0 = se queda hasta ocultarlo
+        }
     }
 
     void StopAiming()
@@ -149,6 +161,9 @@ public class GrenadeThrower : MonoBehaviour
         aiming = false;
         IsAiming = false;
         if (visualsRoot != null) visualsRoot.SetActive(false);
+
+        if (showAimHint && ControlsHintUI.Instance != null)
+            ControlsHintUI.Instance.Hide();
     }
 
     void UpdateAim()

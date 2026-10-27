@@ -150,15 +150,93 @@ MonoBehaviour:
   grenadePrefab: {fileID: 8727919601760837358, guid: 9f78aa364ca5ccd48ad7024be3f57c15, type: 3}
   throwPoint: {fileID: 0}
   aimCamera: {fileID: 0}
+  showAimHint: 1
+  aimHintMessage: "Suelta {0} para lanzar  \xB7  {1} para cancelar"
   throwKey: 21
-  throwSpeed: 15
-  upwardBoost: 2.5
+  cancelKey: 38
+  holdToAim: 1
   cooldown: 1
   grenades: 5
+  landOnCursor: 1
+  throwAngle: 40
+  minThrowSpeed: 5
+  maxThrowSpeed: 22
+  throwSpeed: 15
+  upwardBoost: 2.5
   useMouseAim: 1
   aimMask:
     serializedVersion: 2
     m_Bits: 4294967295
+  showTrajectory: 1
+  markEnemies: 1
+  maxSimTime: 5
+  grenadeCastRadius: 0.1
+  structureLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  scanInterval: 0.05
+  enemyColor: {r: 1, g: 0.15, b: 0.1, a: 1}
+  structureColor: {r: 1, g: 0.85, b: 0.1, a: 1}
+  neutralColor: {r: 0.85, g: 0.92, b: 1, a: 1}
+--- !u!1 &3355678115036931790
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4366672170443884905}
+  - component: {fileID: 667596945525994414}
+  m_Layer: 3
+  m_Name: WeaponHolder
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4366672170443884905
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3355678115036931790}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4880325975444796896}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &667596945525994414
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3355678115036931790}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 28812677d2bc8244789e2850b2fb1e4a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponSwitcher
+  weapons:
+  - displayName: 
+    weapon: {fileID: 0}
+    icon: {fileID: 0}
+    unlocked: 0
+  - displayName: 
+    weapon: {fileID: 0}
+    icon: {fileID: 0}
+    unlocked: 0
+  - displayName: 
+    weapon: {fileID: 0}
+    icon: {fileID: 0}
+    unlocked: 0
+  scrollCooldown: 0.15
+  wrapAround: 1
 --- !u!1 &5944051988441892769
 GameObject:
   m_ObjectHideFlags: 0
@@ -202,6 +280,8 @@ GameObject:
   - component: {fileID: 1685310076147521442}
   - component: {fileID: 6464590225854277868}
   - component: {fileID: 3605813668095207497}
+  - component: {fileID: 8327099181084659544}
+  - component: {fileID: 8543176842324791741}
   m_Layer: 3
   m_Name: FPSCam
   m_TagString: MainCamera
@@ -223,6 +303,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 253958143526096}
+  - {fileID: 4366672170443884905}
   m_Father: {fileID: 4193540534266111966}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!20 &1685310076147521442
@@ -328,6 +409,50 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!114 &8327099181084659544
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6596299498265674855}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f97ad8bab3ca9134c9f01c050e0d978c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MinecartCamera
+  target: {fileID: 3985688650110840062}
+  minSpeed: 0.15
+  fullSpeed: 3
+  speedSmoothing: 4
+  ignoreVerticalMovement: 1
+  vibrationAmplitude: 0.012
+  vibrationFrequency: 18
+  railHitFrequency: 2.2
+  railHitStrength: 0.045
+  lateralAmplitude: 0.035
+  lateralFrequency: 1.8
+  struggleAmplitude: 0.025
+  struggleFrequency: 2.5
+  brakingAmplitude: 0.07
+  brakingRecovery: 3
+  idleVibration: 0.003
+  positionSmoothing: 12
+--- !u!114 &8543176842324791741
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6596299498265674855}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 54e2bd226139d624e891a33ef12cec9d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CameraShake
+  maxOffset: 0.35
+  frequency: 30
+  recoverySpeed: 1.5
 --- !u!1 &8272038211862159798
 GameObject:
   m_ObjectHideFlags: 0

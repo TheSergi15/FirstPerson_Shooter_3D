@@ -46,6 +46,9 @@ public class WeaponControlsGuide : MonoBehaviour
     { 
        foreach (Step step in steps)
        {
+            while (GrenadeThrower.IsAiming) yield return null;
+
+
             string text = string.Format(step.message, ControlsHintUI.Key(step.key));
             ControlsHintUI.Instance.Show(text, step.duration, true);
             yield return new WaitForSecondsRealtime(step.duration + 0.6f);
