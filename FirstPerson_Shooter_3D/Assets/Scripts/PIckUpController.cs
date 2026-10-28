@@ -22,10 +22,13 @@ public class PickUpController : MonoBehaviour
     public float dropForwardForce = 12f;
     public float dropUpwardForce = 2f;
 
-    // NUEVO
     [Header("Avisos en pantalla")]
     public WeaponControlsGuide guide;   // Opcional: si se deja vacío se busca en la escena
     public string pickUpMessage = "Pulsa {0} para agarrar el arma";
+
+    // NUEVO (inventario)
+    [Header("Inventario de armas")]
+    public WeaponSwitcher switcher;     // Opcional: si se deja vacío se busca en la escena. Sin switcher, solo se puede llevar un arma
 
     [Header("Depuración")]
     public bool debugLog = true;          // Desactívalo cuando todo funcione
@@ -34,6 +37,7 @@ public class PickUpController : MonoBehaviour
 
     // Propiedad en vez de campo para ver en la consola quién cambia el slot
     // (otros scripts pueden seguir usando PickUpController.slotFull igual que antes)
+    // Con inventario significa "el jugador lleva algún arma en la mano"
     private static bool _slotFull;
     public static bool slotFull
     {
@@ -54,7 +58,11 @@ public class PickUpController : MonoBehaviour
     private Camera cam;
     private bool warnedNoKeyboard;
     private bool quitting;
-    private bool promptShown;   // NUEVO
+    private bool promptShown;
+
+    // NUEVO (inventario): ranura de esta arma en el WeaponSwitcher (-1 = no usa inventario)
+    private int slotIndex = -1;
+    private bool UsesInventory => switcher != null && slotIndex >= 0;
 
     // Reinicia el slot al entrar en Play, aunque el Domain Reload esté desactivado
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -86,8 +94,20 @@ public class PickUpController : MonoBehaviour
                              "Si los raíles mueven al jugador, el arma se quedará atrás. " +
                              "Arrastra el Gun Container dentro del objeto que se mueve por los raíles.", this);
 
-        // NUEVO: busca la guía de controles si no se ha asignado a mano
+        // Busca la guía de controles si no se ha asignado a mano
         if (!guide) guide = FindFirstObjectByType<WeaponControlsGuide>();
+
+        // NUEVO (inventario): busca el WeaponSwitcher y la ranura que ocupa esta arma
+        if (!switcher) switcher = FindFirstObjectByType<WeaponSwitcher>();
+        if (switcher)
+        {
+            slotIndex = switcher.IndexOf(gameObject);
+            if (slotIndex < 0)
+            {
+                Debug.LogWarning($"[PickUp] {name} no está en la lista Weapons del WeaponSwitcher: se usa el modo de un solo arma (slotFull).", this);
+                switcher = null;
+            }
+        }
 
         // Escala original del arma (para no deformarla al equiparla)
         baseScale = transform.localScale;
@@ -131,16 +151,17 @@ public class PickUpController : MonoBehaviour
         }
 
         if (debugLog)
-            Debug.Log($"[PickUp] {name} listo -> equipped={equipped}, slotFull={slotFull}, rango={pickUpRange}, jugador='{player.name}', tecla={pickUpKey}", this);
+            Debug.Log($"[PickUp] {name} listo -> equipped={equipped}, slotFull={slotFull}, rango={pickUpRange}, jugador='{player.name}', tecla={pickUpKey}, inventario={(UsesInventory ? "ranura " + slotIndex : "no")}", this);
     }
 
     private void OnDisable()
     {
-        // NUEVO: si este arma estaba mostrando el aviso, lo quita
+        // Si este arma estaba mostrando el aviso, lo quita
         if (!quitting) HidePrompt();
 
         // La traza de este aviso en la consola muestra quién ha desactivado el script
-        if (debugLog && !quitting)
+        // NUEVO (inventario): si el GameObject está inactivo es que se ha guardado con el WeaponSwitcher; no es un fallo
+        if (debugLog && !quitting && gameObject.activeInHierarchy)
             Debug.LogWarning($"[PickUp] {name}: PickUpController DESACTIVADO (mira la traza para ver quién)", this);
     }
 
@@ -149,7 +170,18 @@ public class PickUpController : MonoBehaviour
     private void OnDestroy()
     {
         // Si se destruye el arma estando equipada, libera el slot
-        if (equipped && !quitting) slotFull = false;
+        if (equipped && !quitting)
+        {
+            if (UsesInventory)
+            {
+                switcher.Lock(slotIndex);
+                slotFull = switcher.HasWeapon;
+            }
+            else
+            {
+                slotFull = false;
+            }
+        }
     }
 
     // La traza muestra quién cambia el padre del arma (también salta con PickUp y Drop)
@@ -166,7 +198,7 @@ public class PickUpController : MonoBehaviour
             playerVelocity = (player.position - lastPlayerPos) / Time.deltaTime;
         lastPlayerPos = player.position;
 
-        // NUEVO: aviso "Pulsa E para agarrar el arma"
+        // Aviso "Pulsa E para agarrar el arma"
         UpdatePickUpPrompt();
 
         if (Keyboard.current == null)
@@ -188,7 +220,8 @@ public class PickUpController : MonoBehaviour
 
         bool pressed = Keyboard.current[pickUpKey].wasPressedThisFrame;
 
-        if (equipped || slotFull || Time.time < nextPickUpTime)
+        // NUEVO (inventario): CanBePickedUp() sustituye a "equipped || slotFull"
+        if (!CanBePickedUp() || Time.time < nextPickUpTime)
         {
             if (pressed && debugLog)
                 Debug.Log($"[PickUp] {name}: no se puede recoger -> equipped={equipped}, slotFull={slotFull}, cooldown restante={Mathf.Max(0f, nextPickUpTime - Time.time):F2}s", this);
@@ -220,17 +253,23 @@ public class PickUpController : MonoBehaviour
         }
     }
 
-    // NUEVO: muestra el aviso solo cuando realmente se puede recoger
+    // NUEVO (inventario): con inventario se pueden recoger varias armas; sin él, solo una (slotFull)
+    private bool CanBePickedUp()
+    {
+        if (equipped) return false;
+        return UsesInventory || !slotFull;
+    }
+
+    // Muestra el aviso solo cuando realmente se puede recoger
     private void UpdatePickUpPrompt()
     {
-        bool canPickUp = !equipped && !slotFull && Time.time >= nextPickUpTime
+        bool canPickUp = CanBePickedUp() && Time.time >= nextPickUpTime
                          && Vector3.Distance(player.position, transform.position) <= pickUpRange;
 
         if (canPickUp && !promptShown) ShowPrompt();
         else if (!canPickUp && promptShown) HidePrompt();
     }
 
-    // NUEVO
     private void ShowPrompt()
     {
         if (ControlsHintUI.Instance == null) return;
@@ -240,7 +279,6 @@ public class PickUpController : MonoBehaviour
         promptShown = true;
     }
 
-    // NUEVO
     private void HidePrompt()
     {
         if (!promptShown) return;
@@ -276,7 +314,10 @@ public class PickUpController : MonoBehaviour
 
         gunScript.enabled = true;
 
-        // NUEVO: quita el aviso de recoger y enseña el resto de controles
+        // NUEVO (inventario): la mete en el inventario y la equipa (guarda la que llevaba en la mano)
+        if (UsesInventory) switcher.Unlock(slotIndex, true);
+
+        // Quita el aviso de recoger y enseña el resto de controles
         HidePrompt();
         if (guide) guide.PlayControls();
 
@@ -287,10 +328,12 @@ public class PickUpController : MonoBehaviour
     public void Drop()
     {
         equipped = false;
-        slotFull = false;
         nextPickUpTime = Time.time + pickUpCooldown;
 
-        // NUEVO: corta la guía de controles si seguía en marcha
+        // Sin inventario, el slot se libera ya; con inventario se decide al final
+        if (!UsesInventory) slotFull = false;
+
+        // Corta la guía de controles si seguía en marcha
         if (guide) guide.StopGuide();
 
         // Primero se desactiva el Gun: cancela recarga y deja de apuntar
@@ -316,6 +359,13 @@ public class PickUpController : MonoBehaviour
             Random.Range(-1f, 1f),
             Random.Range(-1f, 1f),
             Random.Range(-1f, 1f)) * 10f);
+
+        // NUEVO (inventario): la saca del inventario y el WeaponSwitcher equipa otra si hay
+        if (UsesInventory)
+        {
+            switcher.Lock(slotIndex);
+            slotFull = switcher.HasWeapon;
+        }
 
         if (debugLog) Debug.Log($"[PickUp] {name}: LANZADA", this);
     }

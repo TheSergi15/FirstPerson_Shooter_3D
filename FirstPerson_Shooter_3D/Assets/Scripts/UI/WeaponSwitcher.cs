@@ -4,8 +4,9 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 /// <summary>
-/// Cambia entre armas hijas de un mismo objeto (WeaponHolder).
-/// Teclas 1-9 y rueda del ratón. Compatible con el Input System nuevo.
+/// Inventario de armas con cambio por teclas 1-9 y rueda del ratón (Input System nuevo).
+/// "unlocked" = el arma está en el inventario del jugador.
+/// Las armas con unlocked = false se quedan en el mundo y no se tocan.
 /// </summary>
 public class WeaponSwitcher : MonoBehaviour
 {
@@ -13,9 +14,9 @@ public class WeaponSwitcher : MonoBehaviour
     public class WeaponEntry
     {
         public string displayName = "Arma";
-        public GameObject weapon;      // El GameObject del arma (con tu script Gun)
+        public GameObject weapon;      // El GameObject del arma (con Gun y PickUpController)
         public Sprite icon;            // Icono para el HUD (opcional)
-        public bool unlocked = true;   // Si false, no se puede seleccionar hasta desbloquearla
+        public bool unlocked = true;   // true = ya la lleva el jugador; false = está en el suelo
     }
 
     [SerializeField] private WeaponEntry[] weapons;
@@ -24,20 +25,22 @@ public class WeaponSwitcher : MonoBehaviour
 
     /// <summary>Se lanza al cambiar de arma: (índice, entrada).</summary>
     public event Action<int, WeaponEntry> OnWeaponChanged;
-    /// <summary>Se lanza cuando se desbloquea una ranura (para refrescar el HUD).</summary>
+    /// <summary>Se lanza cuando cambia qué ranuras están disponibles (recoger, soltar).</summary>
     public event Action OnSlotsChanged;
 
     public IReadOnlyList<WeaponEntry> Weapons => weapons;
     public int CurrentIndex { get; private set; } = -1;
     public WeaponEntry Current => CurrentIndex >= 0 ? weapons[CurrentIndex] : null;
+    public bool HasWeapon => CurrentIndex >= 0;
 
     private float nextScrollTime;
 
-    private void Start()
+    // Awake (no Start) para que esté listo antes de que los PickUpController hagan su Start
+    private void Awake()
     {
-        // Desactivar todas las armas al empezar
+        // Solo se guardan las armas que ya están en el inventario; las del suelo no se tocan
         foreach (var w in weapons)
-            if (w.weapon != null) w.weapon.SetActive(false);
+            if (w.unlocked && w.weapon != null) w.weapon.SetActive(false);
 
         int first = FindNext(-1, 1);
         if (first >= 0) Select(first);
@@ -80,7 +83,15 @@ public class WeaponSwitcher : MonoBehaviour
         nextScrollTime = Time.time + scrollCooldown;
     }
 
-    /// <summary>Selecciona el arma en la ranura indicada (si existe y está desbloqueada).</summary>
+    /// <summary>Índice de un arma en la lista, o -1 si no está.</summary>
+    public int IndexOf(GameObject weapon)
+    {
+        for (int i = 0; i < weapons.Length; i++)
+            if (weapons[i].weapon == weapon) return i;
+        return -1;
+    }
+
+    /// <summary>Equipa el arma de la ranura indicada (si está en el inventario). Guarda la anterior.</summary>
     public void Select(int index)
     {
         if (index < 0 || index >= weapons.Length) return;
@@ -97,7 +108,7 @@ public class WeaponSwitcher : MonoBehaviour
         OnWeaponChanged?.Invoke(index, entry);
     }
 
-    /// <summary>Desbloquea una ranura (p. ej. al recoger el arma) y opcionalmente la equipa.</summary>
+    /// <summary>Mete el arma en el inventario (al recogerla) y opcionalmente la equipa.</summary>
     public void Unlock(int index, bool equip = true)
     {
         if (index < 0 || index >= weapons.Length) return;
@@ -105,6 +116,32 @@ public class WeaponSwitcher : MonoBehaviour
         weapons[index].unlocked = true;
         OnSlotsChanged?.Invoke();
         if (equip) Select(index);
+    }
+
+    /// <summary>
+    /// Saca el arma del inventario (al soltarla). NO la desactiva: se queda en el mundo.
+    /// Si era la equipada, pasa automáticamente a otra del inventario.
+    /// </summary>
+    public void Lock(int index)
+    {
+        if (index < 0 || index >= weapons.Length) return;
+
+        weapons[index].unlocked = false;
+
+        if (index == CurrentIndex)
+        {
+            CurrentIndex = -1;
+
+            int next = FindNext(index, 1);
+            if (next < 0) next = FindNext(index, -1);
+            if (next >= 0)
+            {
+                Select(next);   // lanza OnWeaponChanged
+                return;
+            }
+        }
+
+        OnSlotsChanged?.Invoke();
     }
 
     private int FindNext(int from, int dir)
