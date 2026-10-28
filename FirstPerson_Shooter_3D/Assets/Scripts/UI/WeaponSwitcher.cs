@@ -17,6 +17,8 @@ public class WeaponSwitcher : MonoBehaviour
         public string displayName = "Arma";
         public GameObject weapon;      // El GameObject del arma (con Gun y PickUpController)
         public Sprite icon;            // Imagen para el inventario en pantalla
+        public Sprite ammoIcon;        // Icono de bala para el HUD de munición (vacío = bala genérica)
+        public Sprite magazineIcon;    // Icono de cargador para el HUD de munición (vacío = cargador genérico)
         public bool unlocked = true;   // true = ya la lleva el jugador; false = está en el suelo
     }
 

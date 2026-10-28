@@ -1,7 +1,6 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using TMPro;
 
 public class Gun : MonoBehaviour
 {
@@ -33,7 +32,7 @@ public class Gun : MonoBehaviour
     [Tooltip("Giro sobre el propio cañón. Pon 180 si el arma se ve boca abajo.")]
     [SerializeField] private float rollDegrees = 0f;
 
-    [Header("Munición")]
+    [Header("Munición (se muestra con AmmoIconsUI)")]
     [SerializeField] private int magazineSize = 6;
     [SerializeField] private int reserveAmmo = 24;
     [SerializeField] private float reloadTime = 2f;
@@ -45,22 +44,26 @@ public class Gun : MonoBehaviour
     [SerializeField] private AudioClip shootClip;
     [SerializeField] private AudioClip reloadClip;
 
-    [Header("Interfaz de Usuario (UI)")]
-    [SerializeField] private TextMeshProUGUI ammoText;
-
     [Header("Depuración")]
     [SerializeField] private bool debugLog = true;          // Desactívalo cuando todo funcione
 
     private int ammoInMag;
     private float nextFireTime;
     private bool isReloading;
+    private float reloadStartTime;
     private bool warnedNoCamera;
     private Transform owner;                                // El jugador (lo asigna PickUpController)
 
     private readonly RaycastHit[] hits = new RaycastHit[16];
 
+    // Datos que lee el HUD de munición
     public int AmmoInMag => ammoInMag;
     public int ReserveAmmo => reserveAmmo;
+    public int MagazineSize => magazineSize;
+    public bool IsReloading => isReloading;
+    public float ReloadProgress => isReloading
+        ? Mathf.Clamp01((Time.time - reloadStartTime) / Mathf.Max(0.01f, reloadTime))
+        : 0f;
 
     private Camera Cam
     {
@@ -74,11 +77,6 @@ public class Gun : MonoBehaviour
     private void Awake()
     {
         ammoInMag = magazineSize;
-    }
-
-    private void OnEnable()
-    {
-        UpdateUI();
     }
 
     // Lo llama PickUpController en Start
@@ -138,13 +136,11 @@ public class Gun : MonoBehaviour
     private void Shoot()
     {
         ammoInMag--;
-        UpdateUI();
 
         Ray ray = GetShotRay();
 
         if (RaycastIgnoringSelf(ray, out RaycastHit hit))
         {
-           
             if (debugLog) Debug.Log($"[Gun] Disparo -> impacto en '{hit.collider.name}' a {hit.distance:F1} m", this);
 
             if (impactEffectPrefab != null)
@@ -161,11 +157,6 @@ public class Gun : MonoBehaviour
             // Curación
             HealthPickup pickup = hit.collider.GetComponentInParent<HealthPickup>();
             if (pickup != null) pickup.OnShot();
-        }
-        else
-        {
-           
-           
         }
 
         if (muzzleFlash) muzzleFlash.Play();
@@ -274,18 +265,15 @@ public class Gun : MonoBehaviour
         Quaternion zToBarrel;
         switch (barrelPointsTo)
         {
-            case BarrelAxis.Back:  zToBarrel = Quaternion.Euler(0f, 180f, 0f); break;
-            case BarrelAxis.Right: zToBarrel = Quaternion.Euler(0f, 90f, 0f);  break;
-            case BarrelAxis.Left:  zToBarrel = Quaternion.Euler(0f, -90f, 0f); break;
-            case BarrelAxis.Up:    zToBarrel = Quaternion.Euler(-90f, 0f, 0f); break;
-            case BarrelAxis.Down:  zToBarrel = Quaternion.Euler(90f, 0f, 0f);  break;
-            default:               zToBarrel = Quaternion.identity;            break;
+            case BarrelAxis.Back: zToBarrel = Quaternion.Euler(0f, 180f, 0f); break;
+            case BarrelAxis.Right: zToBarrel = Quaternion.Euler(0f, 90f, 0f); break;
+            case BarrelAxis.Left: zToBarrel = Quaternion.Euler(0f, -90f, 0f); break;
+            case BarrelAxis.Up: zToBarrel = Quaternion.Euler(-90f, 0f, 0f); break;
+            case BarrelAxis.Down: zToBarrel = Quaternion.Euler(90f, 0f, 0f); break;
+            default: zToBarrel = Quaternion.identity; break;
         }
         return Quaternion.Inverse(zToBarrel);
     }
-
-   
-
 
     // ---------- RECARGA ----------
     public void Reload()
@@ -301,7 +289,7 @@ public class Gun : MonoBehaviour
     private IEnumerator ReloadRoutine()
     {
         isReloading = true;
-        UpdateUI(); // Muestra "RECARGANDO..."
+        reloadStartTime = Time.time;
         if (audioSource && reloadClip) audioSource.PlayOneShot(reloadClip);
 
         yield return new WaitForSeconds(reloadTime);
@@ -310,16 +298,6 @@ public class Gun : MonoBehaviour
         ammoInMag += taken;
         reserveAmmo -= taken;
         isReloading = false;
-        UpdateUI();
-    }
-
-    // ---------- UI ----------
-    private void UpdateUI()
-    {
-        if (ammoText == null) return;
-        ammoText.text = isReloading
-            ? "RECARGANDO..."
-            : $"BALAS: {ammoInMag} / {reserveAmmo}";
     }
 
     // Si se suelta el arma a mitad de recarga, se cancela de verdad
@@ -328,10 +306,5 @@ public class Gun : MonoBehaviour
     {
         StopAllCoroutines();
         isReloading = false;
-    }
-
-    public void ClearUI()
-    {
-        if (ammoText != null) ammoText.text = "";
     }
 }

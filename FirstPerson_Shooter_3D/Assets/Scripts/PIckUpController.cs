@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -29,6 +30,18 @@ public class PickUpController : MonoBehaviour
     // NUEVO (inventario)
     [Header("Inventario de armas")]
     public WeaponSwitcher switcher;     // Opcional: si se deja vacío se busca en la escena. Sin switcher, solo se puede llevar un arma
+
+    // NUEVO (apuntado)
+    [Header("Apuntar para recoger")]
+    public bool requireAimToPickUp = true;   // Solo se recoge el arma a la que apunta el puntero (evita recoger varias a la vez)
+
+    // NUEVO (resaltado)
+    [Header("Resaltado al apuntar")]
+    public bool highlightWhenAimed = true;                         // El arma que vas a recoger brilla
+    [ColorUsage(false, true)] public Color highlightColor = new Color(1f, 0.75f, 0.2f);
+    public float highlightIntensity = 1.5f;                        // Fuerza del brillo (emisión HDR)
+    [Range(0f, 1f)] public float highlightPulse = 0.35f;           // 0 = brillo fijo; más = palpita
+    public float highlightFadeSpeed = 6f;                          // Velocidad de aparición/desaparición
 
     [Header("Depuración")]
     public bool debugLog = true;          // Desactívalo cuando todo funcione
@@ -64,9 +77,17 @@ public class PickUpController : MonoBehaviour
     private int slotIndex = -1;
     private bool UsesInventory => switcher != null && slotIndex >= 0;
 
+    // NUEVO: el arma base (pistola) siempre está equipada o guardada y no se puede soltar
+    private bool IsBase => UsesInventory && switcher.IsBase(slotIndex);
+
     // Reinicia el slot al entrar en Play, aunque el Domain Reload esté desactivado
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void ResetStatics() => _slotFull = false;
+    private static void ResetStatics()
+    {
+        _slotFull = false;
+        aimedFrame = -1;
+        aimedWeapon = null;
+    }
 
     private void Start()
     {
@@ -108,6 +129,9 @@ public class PickUpController : MonoBehaviour
                 switcher = null;
             }
         }
+
+        // NUEVO: el arma base siempre es del jugador, aunque se olvide marcar 'equipped'
+        if (IsBase) equipped = true;
 
         // Escala original del arma (para no deformarla al equiparla)
         baseScale = transform.localScale;
@@ -158,6 +182,7 @@ public class PickUpController : MonoBehaviour
     {
         // Si este arma estaba mostrando el aviso, lo quita
         if (!quitting) HidePrompt();
+        if (!quitting) ResetHighlight();   // NUEVO
 
         // La traza de este aviso en la consola muestra quién ha desactivado el script
         // NUEVO (inventario): si el GameObject está inactivo es que se ha guardado con el WeaponSwitcher; no es un fallo
@@ -169,6 +194,11 @@ public class PickUpController : MonoBehaviour
 
     private void OnDestroy()
     {
+        // NUEVO (resaltado): libera las copias de materiales creadas para el brillo
+        if (highlightMaterials != null)
+            foreach (HighlightMaterial h in highlightMaterials)
+                if (h.material != null) Destroy(h.material);
+
         // Si se destruye el arma estando equipada, libera el slot
         if (equipped && !quitting)
         {
@@ -211,8 +241,8 @@ public class PickUpController : MonoBehaviour
             return;
         }
 
-        // Lanzar el arma
-        if (equipped && Keyboard.current[throwKey].wasPressedThisFrame)
+        // Lanzar el arma (el arma base no se puede lanzar)
+        if (equipped && !IsBase && Keyboard.current[throwKey].wasPressedThisFrame)
         {
             Drop();
             return;
@@ -229,6 +259,9 @@ public class PickUpController : MonoBehaviour
         }
 
         if (!pressed) return;
+
+        // NUEVO (apuntado): solo se recoge el arma a la que apunta el puntero
+        if (requireAimToPickUp && GetAimedWeapon() != this) return;
 
         // Se equipa al pulsar la tecla si el jugador está dentro del rango
         float distance = Vector3.Distance(player.position, transform.position);
@@ -256,18 +289,159 @@ public class PickUpController : MonoBehaviour
     // NUEVO (inventario): con inventario se pueden recoger varias armas; sin él, solo una (slotFull)
     private bool CanBePickedUp()
     {
-        if (equipped) return false;
+        if (equipped || IsBase) return false;
         return UsesInventory || !slotFull;
     }
 
-    // Muestra el aviso solo cuando realmente se puede recoger
+    // Muestra el aviso solo cuando realmente se puede recoger (y, si hace falta, se le apunta)
     private void UpdatePickUpPrompt()
     {
         bool canPickUp = CanBePickedUp() && Time.time >= nextPickUpTime
-                         && Vector3.Distance(player.position, transform.position) <= pickUpRange;
+                         && Vector3.Distance(player.position, transform.position) <= pickUpRange
+                         && (!requireAimToPickUp || GetAimedWeapon() == this);
 
         if (canPickUp && !promptShown) ShowPrompt();
         else if (!canPickUp && promptShown) HidePrompt();
+
+        // NUEVO (resaltado): brilla exactamente cuando se puede recoger
+        UpdateHighlight(canPickUp);
+    }
+
+    // ---------- RESALTADO AL APUNTAR (NUEVO) ----------
+    // Usa la emisión del material (URP Lit y Standard). Trabaja con copias de los materiales
+    // de ESTA arma, así que no afecta a las demás. Un material sin propiedad de emisión
+    // (p. ej. Unlit) no brillará.
+    private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
+
+    private class HighlightMaterial
+    {
+        public Material material;
+        public Color originalEmission;
+        public bool hadEmissionKeyword;
+    }
+
+    private List<HighlightMaterial> highlightMaterials;
+    private float highlightAmount;   // 0 = apagado, 1 = brillo completo
+
+    private void BuildHighlightCache()
+    {
+        highlightMaterials = new List<HighlightMaterial>();
+
+        foreach (Renderer r in GetComponentsInChildren<Renderer>(true))
+        {
+            // Solo mallas: se ignoran partículas (fogonazo) y demás
+            if (!(r is MeshRenderer) && !(r is SkinnedMeshRenderer)) continue;
+
+            foreach (Material m in r.materials)   // .materials crea copias propias de esta arma
+            {
+                if (!m.HasProperty(EmissionColorId)) continue;
+
+                highlightMaterials.Add(new HighlightMaterial
+                {
+                    material = m,
+                    originalEmission = m.GetColor(EmissionColorId),
+                    hadEmissionKeyword = m.IsKeywordEnabled("_EMISSION")
+                });
+            }
+        }
+    }
+
+    private void UpdateHighlight(bool on)
+    {
+        float goal = (highlightWhenAimed && on) ? 1f : 0f;
+        if (goal == 0f && highlightAmount == 0f) return;   // nada que hacer
+
+        if (highlightMaterials == null) BuildHighlightCache();
+
+        highlightAmount = Mathf.MoveTowards(highlightAmount, goal, highlightFadeSpeed * Time.deltaTime);
+        ApplyHighlight();
+    }
+
+    private void ResetHighlight()
+    {
+        if (highlightMaterials == null || highlightAmount == 0f) return;
+        highlightAmount = 0f;
+        ApplyHighlight();
+    }
+
+    private void ApplyHighlight()
+    {
+        float pulse = 1f - highlightPulse + highlightPulse * (0.5f + 0.5f * Mathf.Sin(Time.time * 5f));
+        Color glow = highlightColor * (highlightIntensity * pulse * highlightAmount);
+
+        foreach (HighlightMaterial h in highlightMaterials)
+        {
+            if (h.material == null) continue;
+
+            if (highlightAmount > 0f)
+            {
+                h.material.EnableKeyword("_EMISSION");
+                h.material.SetColor(EmissionColorId, h.originalEmission + glow);
+            }
+            else
+            {
+                h.material.SetColor(EmissionColorId, h.originalEmission);
+                if (!h.hadEmissionKeyword) h.material.DisableKeyword("_EMISSION");
+            }
+        }
+    }
+
+    // ---------- APUNTADO PARA RECOGER (NUEVO) ----------
+    // Un solo rayo por fotograma, compartido por todas las armas del suelo
+    private const float AimRadius = 0.2f;          // Margen de puntería: el rayo es una esfera de este radio
+    private const float AimMaxDistance = 100f;
+    private const float AimOcclusionMargin = 0.3f; // Un obstáculo solo tapa el arma si está más cerca que esto
+
+    private static readonly RaycastHit[] aimHits = new RaycastHit[32];
+    private static int aimedFrame = -1;
+    private static PickUpController aimedWeapon;
+
+    // Devuelve el arma del suelo a la que apunta el puntero (o null)
+    private PickUpController GetAimedWeapon()
+    {
+        if (aimedFrame == Time.frameCount) return aimedWeapon;
+        aimedFrame = Time.frameCount;
+        aimedWeapon = null;
+
+        if (cam == null) return null;
+
+        Vector2 screenPoint = Mouse.current != null
+            ? Mouse.current.position.ReadValue()
+            : new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
+
+        Ray ray = cam.ScreenPointToRay(screenPoint);
+        int count = Physics.SphereCastNonAlloc(ray, AimRadius, aimHits, AimMaxDistance, ~0, QueryTriggerInteraction.Collide);
+
+        float weaponDistance = float.MaxValue;
+        float obstacleDistance = float.MaxValue;
+        PickUpController weaponHit = null;
+
+        for (int i = 0; i < count; i++)
+        {
+            Collider c = aimHits[i].collider;
+            if (c.transform.IsChildOf(player)) continue;               // el jugador y su arma equipada
+
+            PickUpController weapon = c.GetComponentInParent<PickUpController>();
+            if (weapon != null)
+            {
+                if (weapon.equipped) continue;                         // las armas en la mano no cuentan
+                if (aimHits[i].distance < weaponDistance)
+                {
+                    weaponDistance = aimHits[i].distance;
+                    weaponHit = weapon;
+                }
+            }
+            else if (!c.isTrigger)
+            {
+                obstacleDistance = Mathf.Min(obstacleDistance, aimHits[i].distance);   // suelo, paredes...
+            }
+        }
+
+        // El arma cuenta salvo que haya un obstáculo claramente por delante
+        if (weaponHit != null && weaponDistance <= obstacleDistance + AimOcclusionMargin)
+            aimedWeapon = weaponHit;
+
+        return aimedWeapon;
     }
 
     private void ShowPrompt()
@@ -301,6 +475,7 @@ public class PickUpController : MonoBehaviour
     {
         equipped = true;
         slotFull = true;
+        ResetHighlight();   // NUEVO: el arma en la mano no debe brillar
 
         AttachToContainer();
 
@@ -327,18 +502,14 @@ public class PickUpController : MonoBehaviour
     // Suelta y lanza el arma
     public void Drop()
     {
+        // NUEVO: el arma base (pistola) no se puede soltar
+        if (IsBase) return;
+
         equipped = false;
         nextPickUpTime = Time.time + pickUpCooldown;
 
         // Sin inventario, el slot se libera ya; con inventario se decide al final
         if (!UsesInventory) slotFull = false;
-
-        if (UsesInventory)
-        {
-            switcher.Lock(slotIndex);
-            slotFull = switcher.HasWeapon;
-            if (!switcher.HasWeapon) gunScript.ClearUI();   // sin armas en la mano, oculta la munición
-        }
 
         // Corta la guía de controles si seguía en marcha
         if (guide) guide.StopGuide();
