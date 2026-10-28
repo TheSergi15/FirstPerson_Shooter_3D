@@ -333,6 +333,13 @@ public class PickUpController : MonoBehaviour
         // Sin inventario, el slot se libera ya; con inventario se decide al final
         if (!UsesInventory) slotFull = false;
 
+        if (UsesInventory)
+        {
+            switcher.Lock(slotIndex);
+            slotFull = switcher.HasWeapon;
+            if (!switcher.HasWeapon) gunScript.ClearUI();   // sin armas en la mano, oculta la munición
+        }
+
         // Corta la guía de controles si seguía en marcha
         if (guide) guide.StopGuide();
 

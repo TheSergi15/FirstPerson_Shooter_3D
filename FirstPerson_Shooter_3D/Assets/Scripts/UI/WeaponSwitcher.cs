@@ -7,6 +7,7 @@ using UnityEngine.InputSystem;
 /// Inventario de armas con cambio por teclas 1-9 y rueda del ratón (Input System nuevo).
 /// "unlocked" = el arma está en el inventario del jugador.
 /// Las armas con unlocked = false se quedan en el mundo y no se tocan.
+/// El arma base (la pistola) siempre está en el inventario y no se puede soltar.
 /// </summary>
 public class WeaponSwitcher : MonoBehaviour
 {
@@ -15,16 +16,20 @@ public class WeaponSwitcher : MonoBehaviour
     {
         public string displayName = "Arma";
         public GameObject weapon;      // El GameObject del arma (con Gun y PickUpController)
-        public Sprite icon;            // Icono para el HUD (opcional)
+        public Sprite icon;            // Imagen para el inventario en pantalla
         public bool unlocked = true;   // true = ya la lleva el jugador; false = está en el suelo
     }
 
     [SerializeField] private WeaponEntry[] weapons;
+    [Tooltip("Índice (empezando en 0) del arma base: la pistola. Siempre está en el inventario y no se puede soltar.")]
+    [SerializeField] private int baseWeaponIndex = 0;
     [SerializeField] private float scrollCooldown = 0.15f;
     [SerializeField] private bool wrapAround = true;
 
     /// <summary>Se lanza al cambiar de arma: (índice, entrada).</summary>
     public event Action<int, WeaponEntry> OnWeaponChanged;
+    /// <summary>Se lanza cuando una arma entra en el inventario (al recogerla).</summary>
+    public event Action<int> OnWeaponUnlocked;
     /// <summary>Se lanza cuando cambia qué ranuras están disponibles (recoger, soltar).</summary>
     public event Action OnSlotsChanged;
 
@@ -32,19 +37,33 @@ public class WeaponSwitcher : MonoBehaviour
     public int CurrentIndex { get; private set; } = -1;
     public WeaponEntry Current => CurrentIndex >= 0 ? weapons[CurrentIndex] : null;
     public bool HasWeapon => CurrentIndex >= 0;
+    public int BaseWeaponIndex => baseWeaponIndex;
 
     private float nextScrollTime;
+
+    public bool IsBase(int index) => index == baseWeaponIndex;
 
     // Awake (no Start) para que esté listo antes de que los PickUpController hagan su Start
     private void Awake()
     {
+        if (weapons == null || weapons.Length == 0) return;
+
+        baseWeaponIndex = Mathf.Clamp(baseWeaponIndex, 0, weapons.Length - 1);
+        weapons[baseWeaponIndex].unlocked = true;   // el arma base siempre está en el inventario
+
         // Solo se guardan las armas que ya están en el inventario; las del suelo no se tocan
         foreach (var w in weapons)
             if (w.unlocked && w.weapon != null) w.weapon.SetActive(false);
 
-        int first = FindNext(-1, 1);
-        if (first >= 0) Select(first);
-        else OnSlotsChanged?.Invoke();
+        // Se empieza con el arma base en la mano
+        Select(baseWeaponIndex);
+        if (CurrentIndex < 0)
+        {
+            int first = FindNext(-1, 1);
+            if (first >= 0) Select(first);
+        }
+
+        OnSlotsChanged?.Invoke();
     }
 
     private void Update()
@@ -113,31 +132,34 @@ public class WeaponSwitcher : MonoBehaviour
     {
         if (index < 0 || index >= weapons.Length) return;
 
+        bool wasUnlocked = weapons[index].unlocked;
         weapons[index].unlocked = true;
+
+        if (!wasUnlocked) OnWeaponUnlocked?.Invoke(index);
         OnSlotsChanged?.Invoke();
         if (equip) Select(index);
     }
 
     /// <summary>
     /// Saca el arma del inventario (al soltarla). NO la desactiva: se queda en el mundo.
-    /// Si era la equipada, pasa automáticamente a otra del inventario.
+    /// Si era la equipada, se vuelve al arma base. El arma base nunca se puede sacar.
     /// </summary>
     public void Lock(int index)
     {
         if (index < 0 || index >= weapons.Length) return;
+        if (index == baseWeaponIndex) return;
 
         weapons[index].unlocked = false;
 
         if (index == CurrentIndex)
         {
-            CurrentIndex = -1;
+            CurrentIndex = -1;   // el arma soltada no se desactiva
+            Select(baseWeaponIndex);
 
-            int next = FindNext(index, 1);
-            if (next < 0) next = FindNext(index, -1);
-            if (next >= 0)
+            if (CurrentIndex < 0)
             {
-                Select(next);   // lanza OnWeaponChanged
-                return;
+                int next = FindNext(index, 1);
+                if (next >= 0) Select(next);
             }
         }
 

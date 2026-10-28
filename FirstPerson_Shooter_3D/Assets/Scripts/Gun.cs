@@ -329,4 +329,9 @@ public class Gun : MonoBehaviour
         StopAllCoroutines();
         isReloading = false;
     }
+
+    public void ClearUI()
+    {
+        if (ammoText != null) ammoText.text = "";
+    }
 }
