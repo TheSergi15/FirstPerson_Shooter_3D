@@ -2440,10 +2440,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1449030214}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 100, y: 100}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: -0.5, y: 0}
+  m_SizeDelta: {x: -79, y: -42}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1733443729
 MonoBehaviour:
@@ -2457,6 +2457,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f476de068818f5d429fe4109970e3586, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponInventoryUI
+  switcher: {fileID: 259101464}
+  anchoredPosition: {x: 0, y: 50}
+  slotSize: {x: 160, y: 100}
+  spacing: 14
+  slotColor: {r: 0.07, g: 0.08, b: 0.1, a: 0.7}
+  selectedSlotColor: {r: 0.16, g: 0.14, b: 0.07, a: 0.9}
+  frameColor: {r: 1, g: 0.78, b: 0.2, a: 1}
+  textColor: {r: 1, g: 1, b: 1, a: 1}
+  unselectedBrightness: 0.65
+  showLockedSlots: 0
+  selectedScale: 1.15
+  animSpeed: 14
+  popDuration: 0.45
+  punchAmount: 0.12
 --- !u!1 &1740279243
 GameObject:
   m_ObjectHideFlags: 0
