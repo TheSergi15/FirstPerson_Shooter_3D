@@ -12,7 +12,6 @@ GameObject:
   - component: {fileID: 2970597549621245404}
   - component: {fileID: 3792887101774565007}
   - component: {fileID: 5928763025798746638}
-  - component: {fileID: 4144403892198988787}
   - component: {fileID: 2146720416874252360}
   m_Layer: 0
   m_Name: Player1
@@ -117,34 +116,6 @@ CapsuleCollider:
   m_Height: 2
   m_Direction: 1
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &4144403892198988787
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2762964749647146188}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 01ef64c0a5fbec74e8f008709563b9b1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
-  maxHealth: 100
-  heartsContainer: {fileID: 0}
-  fullHeartSprite: {fileID: 0}
-  emptyHeartSprite: {fileID: 0}
-  maxHearts: 5
-  heartSize: {x: 64, y: 64}
-  heartSpacing: 8
-  shakeDuration: 0.15
-  shakeStrength: 4
-  fallDuration: 0.9
-  gravity: 1200
-  splitSpeed: 90
-  jumpSpeed: 150
-  spinSpeed: 160
-  healthText: {fileID: 0}
-  flashEffect: {fileID: 0}
 --- !u!114 &2146720416874252360
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -297,6 +268,8 @@ GameObject:
   - component: {fileID: 1685310076147521442}
   - component: {fileID: 6464590225854277868}
   - component: {fileID: 3605813668095207497}
+  - component: {fileID: 6970076392987582179}
+  - component: {fileID: 7223745459256398742}
   m_Layer: 3
   m_Name: FPSCam
   m_TagString: MainCamera
@@ -424,6 +397,50 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!114 &6970076392987582179
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6596299498265674855}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 54e2bd226139d624e891a33ef12cec9d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CameraShake
+  maxOffset: 0.35
+  frequency: 30
+  recoverySpeed: 1.5
+--- !u!114 &7223745459256398742
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6596299498265674855}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f97ad8bab3ca9134c9f01c050e0d978c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MinecartCamera
+  target: {fileID: 0}
+  minSpeed: 0.15
+  fullSpeed: 3
+  speedSmoothing: 4
+  ignoreVerticalMovement: 1
+  vibrationAmplitude: 0.012
+  vibrationFrequency: 18
+  railHitFrequency: 2.2
+  railHitStrength: 0.045
+  lateralAmplitude: 0.035
+  lateralFrequency: 1.8
+  struggleAmplitude: 0.025
+  struggleFrequency: 2.5
+  brakingAmplitude: 0.07
+  brakingRecovery: 3
+  idleVibration: 0.003
+  positionSmoothing: 12
 --- !u!1 &8272038211862159798
 GameObject:
   m_ObjectHideFlags: 0

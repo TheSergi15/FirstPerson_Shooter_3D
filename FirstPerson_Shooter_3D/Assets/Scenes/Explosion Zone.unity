@@ -2330,11 +2330,6 @@ MonoBehaviour:
   reloadBarColor: {r: 1, g: 0.78, b: 0.2, a: 1}
   lowAmmoThreshold: 0.25
   reloadBarHeight: 4
---- !u!1 &1592145809 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 6596299498265674855, guid: 993a4600f9e174346a834374ab292bb9, type: 3}
-  m_PrefabInstance: {fileID: 2024732251}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1690452965
 GameObject:
   m_ObjectHideFlags: 0
@@ -2474,50 +2469,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4880325975444796896, guid: 993a4600f9e174346a834374ab292bb9, type: 3}
   m_PrefabInstance: {fileID: 2024732251}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1833697649
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1592145809}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 54e2bd226139d624e891a33ef12cec9d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CameraShake
-  maxOffset: 0.35
-  frequency: 30
-  recoverySpeed: 1.5
---- !u!114 &1833697650
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1592145809}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f97ad8bab3ca9134c9f01c050e0d978c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MinecartCamera
-  target: {fileID: 0}
-  minSpeed: 0.15
-  fullSpeed: 3
-  speedSmoothing: 4
-  ignoreVerticalMovement: 1
-  vibrationAmplitude: 0.012
-  vibrationFrequency: 18
-  railHitFrequency: 2.2
-  railHitStrength: 0.045
-  lateralAmplitude: 0.035
-  lateralFrequency: 1.8
-  struggleAmplitude: 0.025
-  struggleFrequency: 2.5
-  brakingAmplitude: 0.07
-  brakingRecovery: 3
-  idleVibration: 0.003
-  positionSmoothing: 12
 --- !u!1 &1833708604 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 8537514379385918128, guid: 5487115ccf8c77b44ab4b236f5ce4bf8, type: 3}
@@ -2848,6 +2799,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 5186412920841328703, guid: 993a4600f9e174346a834374ab292bb9, type: 3}
+    - {fileID: 4144403892198988787, guid: 993a4600f9e174346a834374ab292bb9, type: 3}
     m_RemovedGameObjects:
     - {fileID: 3355678115036931790, guid: 993a4600f9e174346a834374ab292bb9, type: 3}
     m_AddedGameObjects:
@@ -2855,12 +2807,6 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 1072806232}
     m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 6596299498265674855, guid: 993a4600f9e174346a834374ab292bb9, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1833697650}
-    - targetCorrespondingSourceObject: {fileID: 6596299498265674855, guid: 993a4600f9e174346a834374ab292bb9, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1833697649}
     - targetCorrespondingSourceObject: {fileID: 5944051988441892769, guid: 993a4600f9e174346a834374ab292bb9, type: 3}
       insertIndex: -1
       addedObject: {fileID: 259101464}
@@ -3145,8 +3091,8 @@ SceneRoots:
   m_Roots:
   - {fileID: 410087041}
   - {fileID: 832575519}
-  - {fileID: 208986757}
   - {fileID: 2024732251}
+  - {fileID: 208986757}
   - {fileID: 1449030214}
   - {fileID: 1182539706}
   - {fileID: 1912300412}
