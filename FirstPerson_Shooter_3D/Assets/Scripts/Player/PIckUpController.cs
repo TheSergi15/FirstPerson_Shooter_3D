@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -35,13 +34,8 @@ public class PickUpController : MonoBehaviour
     [Header("Apuntar para recoger")]
     public bool requireAimToPickUp = true;   // Solo se recoge el arma a la que apunta el puntero (evita recoger varias a la vez)
 
-    // NUEVO (resaltado)
     [Header("Resaltado al apuntar")]
-    public bool highlightWhenAimed = true;                         // El arma que vas a recoger brilla
-    [ColorUsage(false, true)] public Color highlightColor = new Color(1f, 0.75f, 0.2f);
-    public float highlightIntensity = 1.5f;                        // Fuerza del brillo (emisión HDR)
-    [Range(0f, 1f)] public float highlightPulse = 0.35f;           // 0 = brillo fijo; más = palpita
-    public float highlightFadeSpeed = 6f;                          // Velocidad de aparición/desaparición
+    public WeaponHighlight highlight;   // Opcional: si se deja vacío se busca en este objeto. Sin él, el arma no brilla
 
     [Header("Depuración")]
     public bool debugLog = true;          // Desactívalo cuando todo funcione
@@ -115,8 +109,9 @@ public class PickUpController : MonoBehaviour
                              "Si los raíles mueven al jugador, el arma se quedará atrás. " +
                              "Arrastra el Gun Container dentro del objeto que se mueve por los raíles.", this);
 
-        // Busca la guía de controles si no se ha asignado a mano
+        // Busca la guía de controles y el resaltado si no se han asignado a mano
         if (!guide) guide = FindFirstObjectByType<WeaponControlsGuide>();
+        if (!highlight) highlight = GetComponent<WeaponHighlight>();
 
         // NUEVO (inventario): busca el WeaponSwitcher y la ranura que ocupa esta arma
         if (!switcher) switcher = FindFirstObjectByType<WeaponSwitcher>();
@@ -182,7 +177,7 @@ public class PickUpController : MonoBehaviour
     {
         // Si este arma estaba mostrando el aviso, lo quita
         if (!quitting) HidePrompt();
-        if (!quitting) ResetHighlight();   // NUEVO
+        if (!quitting && highlight) highlight.ResetNow();
 
         // La traza de este aviso en la consola muestra quién ha desactivado el script
         // NUEVO (inventario): si el GameObject está inactivo es que se ha guardado con el WeaponSwitcher; no es un fallo
@@ -194,11 +189,6 @@ public class PickUpController : MonoBehaviour
 
     private void OnDestroy()
     {
-        // NUEVO (resaltado): libera las copias de materiales creadas para el brillo
-        if (highlightMaterials != null)
-            foreach (HighlightMaterial h in highlightMaterials)
-                if (h.material != null) Destroy(h.material);
-
         // Si se destruye el arma estando equipada, libera el slot
         if (equipped && !quitting)
         {
@@ -228,7 +218,7 @@ public class PickUpController : MonoBehaviour
             playerVelocity = (player.position - lastPlayerPos) / Time.deltaTime;
         lastPlayerPos = player.position;
 
-        // Aviso "Pulsa E para agarrar el arma"
+        // Aviso "Pulsa E para agarrar el arma" y resaltado
         UpdatePickUpPrompt();
 
         if (Keyboard.current == null)
@@ -303,87 +293,8 @@ public class PickUpController : MonoBehaviour
         if (canPickUp && !promptShown) ShowPrompt();
         else if (!canPickUp && promptShown) HidePrompt();
 
-        // NUEVO (resaltado): brilla exactamente cuando se puede recoger
-        UpdateHighlight(canPickUp);
-    }
-
-    // ---------- RESALTADO AL APUNTAR (NUEVO) ----------
-    // Usa la emisión del material (URP Lit y Standard). Trabaja con copias de los materiales
-    // de ESTA arma, así que no afecta a las demás. Un material sin propiedad de emisión
-    // (p. ej. Unlit) no brillará.
-    private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
-
-    private class HighlightMaterial
-    {
-        public Material material;
-        public Color originalEmission;
-        public bool hadEmissionKeyword;
-    }
-
-    private List<HighlightMaterial> highlightMaterials;
-    private float highlightAmount;   // 0 = apagado, 1 = brillo completo
-
-    private void BuildHighlightCache()
-    {
-        highlightMaterials = new List<HighlightMaterial>();
-
-        foreach (Renderer r in GetComponentsInChildren<Renderer>(true))
-        {
-            // Solo mallas: se ignoran partículas (fogonazo) y demás
-            if (!(r is MeshRenderer) && !(r is SkinnedMeshRenderer)) continue;
-
-            foreach (Material m in r.materials)   // .materials crea copias propias de esta arma
-            {
-                if (!m.HasProperty(EmissionColorId)) continue;
-
-                highlightMaterials.Add(new HighlightMaterial
-                {
-                    material = m,
-                    originalEmission = m.GetColor(EmissionColorId),
-                    hadEmissionKeyword = m.IsKeywordEnabled("_EMISSION")
-                });
-            }
-        }
-    }
-
-    private void UpdateHighlight(bool on)
-    {
-        float goal = (highlightWhenAimed && on) ? 1f : 0f;
-        if (goal == 0f && highlightAmount == 0f) return;   // nada que hacer
-
-        if (highlightMaterials == null) BuildHighlightCache();
-
-        highlightAmount = Mathf.MoveTowards(highlightAmount, goal, highlightFadeSpeed * Time.deltaTime);
-        ApplyHighlight();
-    }
-
-    private void ResetHighlight()
-    {
-        if (highlightMaterials == null || highlightAmount == 0f) return;
-        highlightAmount = 0f;
-        ApplyHighlight();
-    }
-
-    private void ApplyHighlight()
-    {
-        float pulse = 1f - highlightPulse + highlightPulse * (0.5f + 0.5f * Mathf.Sin(Time.time * 5f));
-        Color glow = highlightColor * (highlightIntensity * pulse * highlightAmount);
-
-        foreach (HighlightMaterial h in highlightMaterials)
-        {
-            if (h.material == null) continue;
-
-            if (highlightAmount > 0f)
-            {
-                h.material.EnableKeyword("_EMISSION");
-                h.material.SetColor(EmissionColorId, h.originalEmission + glow);
-            }
-            else
-            {
-                h.material.SetColor(EmissionColorId, h.originalEmission);
-                if (!h.hadEmissionKeyword) h.material.DisableKeyword("_EMISSION");
-            }
-        }
+        // El brillo lo gestiona WeaponHighlight: brilla exactamente cuando se puede recoger
+        if (highlight) highlight.SetHighlighted(canPickUp);
     }
 
     // ---------- APUNTADO PARA RECOGER (NUEVO) ----------
@@ -475,7 +386,7 @@ public class PickUpController : MonoBehaviour
     {
         equipped = true;
         slotFull = true;
-        ResetHighlight();   // NUEVO: el arma en la mano no debe brillar
+        if (highlight) highlight.ResetNow();   // el arma en la mano no debe brillar
 
         AttachToContainer();
 

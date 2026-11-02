@@ -366,6 +366,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 8ce7509180d42e949aff54f9142fc4ac, type: 3}
       insertIndex: -1
       addedObject: {fileID: 825453561}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 8ce7509180d42e949aff54f9142fc4ac, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 825453565}
   m_SourcePrefab: {fileID: 100100000, guid: 8ce7509180d42e949aff54f9142fc4ac, type: 3}
 --- !u!1 &73560726
 GameObject:
@@ -1047,6 +1050,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: c5da390497ace184492633206c06e85d, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1205799574}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: c5da390497ace184492633206c06e85d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1205799578}
   m_SourcePrefab: {fileID: 100100000, guid: c5da390497ace184492633206c06e85d, type: 3}
 --- !u!1001 &604459451
 PrefabInstance:
@@ -1264,11 +1270,7 @@ MonoBehaviour:
   pickUpMessage: Pulsa {0} para agarrar el arma
   switcher: {fileID: 259101464}
   requireAimToPickUp: 1
-  highlightWhenAimed: 1
-  highlightColor: {r: 1, g: 0.75, b: 0.2, a: 1}
-  highlightIntensity: 1.5
-  highlightPulse: 0.35
-  highlightFadeSpeed: 6
+  highlight: {fileID: 0}
   debugLog: 1
   equipped: 0
 --- !u!54 &825453563
@@ -1319,6 +1321,22 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.049103413, y: 0.24075365, z: 1.2191849}
   m_Center: {x: 0.0048813457, y: -0.06903775, z: 0.20442665}
+--- !u!114 &825453565
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 825453560}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1fbcd9d98649cf47a83a0341c7c0108, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponHighlight
+  highlightColor: {r: 1, g: 0.75, b: 0.2, a: 1}
+  intensity: 1.5
+  pulse: 0.35
+  fadeSpeed: 6
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -1787,11 +1805,7 @@ MonoBehaviour:
   pickUpMessage: Pulsa {0} para agarrar el arma
   switcher: {fileID: 259101464}
   requireAimToPickUp: 1
-  highlightWhenAimed: 1
-  highlightColor: {r: 1, g: 0.75, b: 0.2, a: 1}
-  highlightIntensity: 1.5
-  highlightPulse: 0.35
-  highlightFadeSpeed: 6
+  highlight: {fileID: 0}
   debugLog: 1
   equipped: 0
 --- !u!54 &1205799576
@@ -1842,6 +1856,22 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.045380354, y: 0.13968277, z: 0.18928146}
   m_Center: {x: -0.007237375, y: -0.0060653687, z: -0.042650223}
+--- !u!114 &1205799578
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1205799572}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1fbcd9d98649cf47a83a0341c7c0108, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponHighlight
+  highlightColor: {r: 1, g: 0.75, b: 0.2, a: 1}
+  intensity: 1.5
+  pulse: 0.35
+  fadeSpeed: 6
 --- !u!1 &1228160120
 GameObject:
   m_ObjectHideFlags: 0

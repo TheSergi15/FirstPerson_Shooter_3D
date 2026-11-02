@@ -102,6 +102,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 115ab982b626e7f4281fb190244f181e, type: 3}
       insertIndex: -1
       addedObject: {fileID: 8393013960344496675}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 115ab982b626e7f4281fb190244f181e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1996399824036518464}
   m_SourcePrefab: {fileID: 100100000, guid: 115ab982b626e7f4281fb190244f181e, type: 3}
 --- !u!1 &8537514379385918128 stripped
 GameObject:
@@ -182,6 +185,11 @@ MonoBehaviour:
   throwKey: 31
   dropForwardForce: 0
   dropUpwardForce: 0
+  guide: {fileID: 0}
+  pickUpMessage: Pulsa {0} para agarrar el arma
+  switcher: {fileID: 0}
+  requireAimToPickUp: 1
+  highlight: {fileID: 0}
   debugLog: 1
   equipped: 0
 --- !u!114 &8393013960344496675
@@ -221,8 +229,23 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   shootClip: {fileID: 0}
   reloadClip: {fileID: 0}
-  ammoText: {fileID: 0}
   debugLog: 1
+--- !u!114 &1996399824036518464
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8537514379385918128}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1fbcd9d98649cf47a83a0341c7c0108, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponHighlight
+  highlightColor: {r: 1, g: 0.75, b: 0.2, a: 1}
+  intensity: 1.5
+  pulse: 0.35
+  fadeSpeed: 6
 --- !u!4 &9020860363295819786 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 115ab982b626e7f4281fb190244f181e, type: 3}
