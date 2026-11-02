@@ -189,7 +189,7 @@ MonoBehaviour:
   pickUpMessage: Pulsa {0} para agarrar el arma
   switcher: {fileID: 0}
   requireAimToPickUp: 1
-  highlight: {fileID: 0}
+  highlight: {fileID: 1996399824036518464}
   debugLog: 1
   equipped: 0
 --- !u!114 &8393013960344496675

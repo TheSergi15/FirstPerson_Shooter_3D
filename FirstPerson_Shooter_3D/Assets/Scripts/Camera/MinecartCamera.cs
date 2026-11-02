@@ -238,6 +238,13 @@ public class MinecartCamera : MonoBehaviour
             1f - Mathf.Exp(-positionSmoothing * dt)
         );
 
-        transform.localPosition = baseLocalPos + currentOffset;
+        // Obtener el temblor de la explosión.
+        Vector3 shakeOffset = CameraShake.Instance != null
+            ? CameraShake.Instance.GetShakeOffset()
+            : Vector3.zero;
+
+        // Combinar el movimiento de la vagoneta y el temblor.
+        transform.localPosition =
+            baseLocalPos + currentOffset + shakeOffset;
     }
 }
