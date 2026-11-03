@@ -3014,6 +3014,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1072806232}
     - target: {fileID: 2146720416874252360, guid: 993a4600f9e174346a834374ab292bb9, type: 3}
+      propertyPath: showAimHint
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2146720416874252360, guid: 993a4600f9e174346a834374ab292bb9, type: 3}
       propertyPath: aimMask.m_Bits
       value: 247
       objectReference: {fileID: 0}
@@ -3035,7 +3039,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3985688650110840062, guid: 993a4600f9e174346a834374ab292bb9, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -39.32
+      value: -43.08
       objectReference: {fileID: 0}
     - target: {fileID: 3985688650110840062, guid: 993a4600f9e174346a834374ab292bb9, type: 3}
       propertyPath: m_LocalRotation.w
