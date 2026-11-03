@@ -34,7 +34,6 @@ public class GrenadeThrower : MonoBehaviour
 
     [Header("Lanzamiento")]
     public float cooldown = 1f;
-    public int grenades = 5;
     [Tooltip("La granada cae donde marca el cursor (calcula la velocidad necesaria)")]
     public bool landOnCursor = true;
     [Range(15f, 75f)] public float throwAngle = 40f;
@@ -89,7 +88,10 @@ public class GrenadeThrower : MonoBehaviour
 
     static Texture2D markerTex, dashTex;
 
-    bool CanThrow => grenadePrefab != null && grenades > 0 && Time.time >= nextThrowTime;
+    bool CanThrow => grenadePrefab != null
+              && GrenadeInventory.HasGrenade
+              && TutorialGate.CanThrowGrenade
+              && Time.time >= nextThrowTime;
 
     // =====================================================================
     //  Ciclo de vida
@@ -344,14 +346,14 @@ public class GrenadeThrower : MonoBehaviour
         Grenade g = Instantiate(grenadePrefab, spawn, Quaternion.identity);
         g.Launch(velocity);
 
-        grenades--;
+        GrenadeInventory.Consume();
         nextThrowTime = Time.time + cooldown;
     }
 
     /// <summary>Útil para pickups de munición de granadas.</summary>
     public void AddGrenades(int amount)
     {
-        grenades += amount;
+        GrenadeInventory.Add(amount);
     }
 
     // =====================================================================

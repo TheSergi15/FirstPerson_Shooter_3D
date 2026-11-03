@@ -4,9 +4,15 @@ using UnityEngine.UI;
 
 public class PointerController : MonoBehaviour
 {
+    [Tooltip("Si está marcado, el puntero se ve siempre (también sin arma). Si no, solo mientras hay un arma equipada")]
+    [SerializeField] private bool alwaysVisible = true;
+
     private RectTransform pointerRect;
     private Graphic[] graphics;
     private bool pointerShown;
+
+    // Debe verse siempre, o solo con arma equipada si se desmarca alwaysVisible
+    private bool ShouldShow => alwaysVisible || PickUpController.slotFull;
 
     void Start()
     {
@@ -27,14 +33,14 @@ public class PointerController : MonoBehaviour
             pointerRect.position = centerPosition;
         }
 
-        SetPointerVisible(PickUpController.slotFull);
+        SetPointerVisible(ShouldShow);
     }
 
     void Update()
     {
-        // El puntero solo se ve mientras hay un arma equipada
-        if (PickUpController.slotFull != pointerShown)
-            SetPointerVisible(PickUpController.slotFull);
+        // Solo cambia la visibilidad cuando hace falta
+        if (ShouldShow != pointerShown)
+            SetPointerVisible(ShouldShow);
 
         if (Mouse.current != null)
         {

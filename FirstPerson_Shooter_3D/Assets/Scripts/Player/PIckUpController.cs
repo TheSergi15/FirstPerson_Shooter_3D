@@ -400,6 +400,8 @@ public class PickUpController : MonoBehaviour
 
         gunScript.enabled = true;
 
+        TutorialEvents.NotifyWeaponPickedUp();
+
         // NUEVO (inventario): la mete en el inventario y la equipa (guarda la que llevaba en la mano)
         if (UsesInventory) switcher.Unlock(slotIndex, true);
 

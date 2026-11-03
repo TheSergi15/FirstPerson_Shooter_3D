@@ -111,6 +111,8 @@ public class Gun : MonoBehaviour
     // ---------- DISPARO ----------
     private void TryShoot()
     {
+        if (!TutorialGate.CanShoot) return;   // NUEVO, primera línea
+                                              // ... resto igual
         if (isReloading || Time.time < nextFireTime) return;
 
         if (Cam == null)
@@ -136,7 +138,8 @@ public class Gun : MonoBehaviour
     private void Shoot()
     {
         ammoInMag--;
-
+        TutorialEvents.NotifyWeaponFired();   // NUEVO, justo después
+                                              // ... resto igual
         Ray ray = GetShotRay();
 
         if (RaycastIgnoringSelf(ray, out RaycastHit hit))

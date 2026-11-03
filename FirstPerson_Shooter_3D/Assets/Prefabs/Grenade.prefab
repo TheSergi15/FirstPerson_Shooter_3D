@@ -17,6 +17,9 @@ GameObject:
   - component: {fileID: 6225797281714164524}
   - component: {fileID: 7323619404612020772}
   - component: {fileID: 1843352779549980865}
+  - component: {fileID: 4820944054376787817}
+  - component: {fileID: 4245658276819639573}
+  - component: {fileID: 8955725208699357281}
   m_Layer: 0
   m_Name: Grenade
   m_TagString: Untagged
@@ -34,7 +37,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.15, y: 0.15, z: 0.15}
+  m_LocalScale: {x: 0.1, y: 0.1, z: 0.1}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
@@ -383,3 +386,46 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &4820944054376787817
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8125746044863309356}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1fbcd9d98649cf47a83a0341c7c0108, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponHighlight
+  highlightColor: {r: 1, g: 0.75, b: 0.2, a: 1}
+  intensity: 1.5
+  pulse: 0.35
+  fadeSpeed: 6
+--- !u!114 &4245658276819639573
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8125746044863309356}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eef074ea9d6adfa40985ad5dfe891e23, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AimHighlightTarget
+  maxDistance: 10
+--- !u!114 &8955725208699357281
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8125746044863309356}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2854987cff0cc204db84d28c7cdcb341, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GrenadePickup
+  amount: 1
+  pickupDistance: 10
