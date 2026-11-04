@@ -141,13 +141,17 @@ public class MinecartCamera : MonoBehaviour
 
         if (deceleration > 0.8f)
         {
-            brakingOffset -= Mathf.Clamp(
-                deceleration * brakingAmplitude * 0.12f,
-                0f,
-                brakingAmplitude
+            float brakeAmount =
+                deceleration * brakingAmplitude * 0.12f * dt;
+
+            brakingOffset = Mathf.Clamp(
+                brakingOffset - brakeAmount,
+                -brakingAmplitude,
+                0f
             );
         }
 
+        // Recuperar progresivamente la posición original.
         brakingOffset = Mathf.Lerp(
             brakingOffset,
             0f,
