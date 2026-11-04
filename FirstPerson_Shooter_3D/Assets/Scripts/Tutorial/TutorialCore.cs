@@ -31,11 +31,13 @@ public static class TutorialEvents
     public static event Action WeaponPickedUp;
     public static event Action WeaponFired;
     public static event Action GrenadePickedUp;
+    public static event Action HealPickupShot;
     public static event Action<TutorialZoneId> ZoneEntered;
 
     public static void NotifyWeaponPickedUp() => WeaponPickedUp?.Invoke();
     public static void NotifyWeaponFired() => WeaponFired?.Invoke();
     public static void NotifyGrenadePickedUp() => GrenadePickedUp?.Invoke();
+    public static void NotifyHealPickupShot() => HealPickupShot?.Invoke();
     public static void NotifyZoneEntered(TutorialZoneId id) => ZoneEntered?.Invoke(id);
 }
 

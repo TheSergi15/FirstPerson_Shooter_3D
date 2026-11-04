@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 176465923514083936}
   - component: {fileID: 6351680340306302854}
   - component: {fileID: 2860164789986698581}
+  - component: {fileID: 757272026070630375}
   m_Layer: 7
   m_Name: Enemy
   m_TagString: Untagged
@@ -30,7 +31,7 @@ Transform:
   m_GameObject: {fileID: 8814156245261537837}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.11, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -143,3 +144,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyMover
   moveSpeed: 6
   targetDestination: {fileID: 0}
+--- !u!114 &757272026070630375
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8814156245261537837}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3aaa2ebf1f5c8c54da1f811d2c4efb9b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyAttack
+  attackDamage: 10
+  timeBetweenAttacks: 3

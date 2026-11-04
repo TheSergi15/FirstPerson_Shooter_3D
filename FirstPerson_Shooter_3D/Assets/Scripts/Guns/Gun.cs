@@ -109,10 +109,11 @@ public class Gun : MonoBehaviour
     }
 
     // ---------- DISPARO ----------
+    // ---------- DISPARO ----------
     private void TryShoot()
     {
-        if (!TutorialGate.CanShoot) return;   // NUEVO, primera línea
-                                              // ... resto igual
+        if (!TutorialGate.CanShoot) return;   // NUEVO: bloqueado hasta que el tutorial lo permita
+
         if (isReloading || Time.time < nextFireTime) return;
 
         if (Cam == null)
@@ -138,8 +139,8 @@ public class Gun : MonoBehaviour
     private void Shoot()
     {
         ammoInMag--;
-        TutorialEvents.NotifyWeaponFired();   // NUEVO, justo después
-                                              // ... resto igual
+        TutorialEvents.NotifyWeaponFired();   // NUEVO
+
         Ray ray = GetShotRay();
 
         if (RaycastIgnoringSelf(ray, out RaycastHit hit))
@@ -159,12 +160,17 @@ public class Gun : MonoBehaviour
 
             // Curación
             HealthPickup pickup = hit.collider.GetComponentInParent<HealthPickup>();
-            if (pickup != null) pickup.OnShot();
+            if (pickup != null)
+            {
+                pickup.OnShot();
+                TutorialEvents.NotifyHealPickupShot();   // NUEVO
+            }
         }
 
         if (muzzleFlash) muzzleFlash.Play();
         if (audioSource && shootClip) audioSource.PlayOneShot(shootClip);
     }
+
 
     private Vector2 GetScreenPoint()
     {
