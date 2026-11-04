@@ -161,12 +161,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Grenade
   fuseTime: 9
   explodeOnImpact: 1
-  radius: 4
+  radius: 8
   killRadius: 3
-  killDamage: 9999
+  killDamage: 100
   maxDamage: 100
   minDamage: 25
-  explosionForce: 20
+  explosionForce: 50
   upwardsModifier: 0.5
   affectedLayers:
     serializedVersion: 2
@@ -429,3 +429,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GrenadePickup
   amount: 1
   pickupDistance: 10
+  debugLog: 1
