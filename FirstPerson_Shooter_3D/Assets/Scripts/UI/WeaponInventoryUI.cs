@@ -122,7 +122,11 @@ public class WeaponInventoryUI : MonoBehaviour
         var rootRT = (RectTransform)rootGO.transform;
         rootRT.anchorMin = rootRT.anchorMax = new Vector2(0f, 0f);     // esquina inferior izquierda
         rootRT.pivot = new Vector2(0f, 0f);
-        rootRT.anchoredPosition = anchoredPosition;
+        // Margen extra para que la ranura seleccionada (que crece) tampoco se acerque al borde
+        Vector2 growth = slotSize * (selectedScale - 1f) * 0.5f
+                       + new Vector2(FrameThickness, FrameThickness);
+        rootRT.anchoredPosition = anchoredPosition + growth;
+
 
         var layout = rootGO.GetComponent<HorizontalLayoutGroup>();
         layout.spacing = spacing;

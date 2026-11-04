@@ -28,6 +28,8 @@ public class NextLevelLoader : MonoBehaviour
         if (fadeGroup != null)
         {
             fadeGroup.gameObject.SetActive(true);
+            fadeGroup.transform.SetAsLastSibling();   // el fundido tapa también el cartel
+            fadeGroup.alpha = 0f;
             float t = 0f;
             while (t < fadeDuration)
             {

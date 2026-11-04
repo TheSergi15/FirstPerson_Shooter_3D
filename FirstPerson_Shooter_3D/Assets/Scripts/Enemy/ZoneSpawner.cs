@@ -68,6 +68,10 @@ public class ZoneSpawner : MonoBehaviour
 
     [Header("Común")]
     public LayerMask groundMask = ~0;
+    [Tooltip("Apoya los pies del enemigo sobre el suelo y corrige la altura de su destino (evita que se hunda)")]
+    public bool alignFeetToGround = true;
+    [Tooltip("Margen entre los pies y el suelo")]
+    public float feetClearance = 0.02f;
     [Tooltip("Ajusta las posiciones al NavMesh si existe (para enemigos con NavMeshAgent)")]
     public bool snapToNavMesh = true;
     public float navMeshSnapDistance = 3f;
@@ -130,8 +134,18 @@ public class ZoneSpawner : MonoBehaviour
 
             GameObject enemy = Instantiate(prefab, plans[i].spawn, rot);
 
+            // Los pies sobre el suelo. Sin NavMeshAgent, el destino se sube la altura del pivote:
+            // si no, el enemigo caminaría hasta que su pivote toque el suelo y se hundiría.
+            bool hasAgent = enemy.GetComponent<NavMeshAgent>() != null;
+            Vector3 dest = plans[i].dest;
+            if (alignFeetToGround)
+            {
+                float pivotToGround = AlignFeetToGround(enemy, plans[i].spawn.y, hasAgent);
+                if (!hasAgent) dest.y += pivotToGround;
+            }
+
             EnemyMover mover = enemy.GetComponent<EnemyMover>();
-            if (mover != null) mover.SetDestination(MakeDestination(plans[i].dest));
+            if (mover != null) mover.SetDestination(MakeDestination(dest));
         }
 
         if (debugLog) Debug.Log($"[ZoneSpawner] {name}: {plans.Count} enemigos generados ({mode}).", this);
@@ -269,6 +283,54 @@ public class ZoneSpawner : MonoBehaviour
         if (c.GetComponentInParent<HealthPickup>() != null) return false;
         if (c.attachedRigidbody != null && !c.attachedRigidbody.isKinematic) return false;
         return true;
+    }
+
+    /// <summary>
+    /// Sube al enemigo (o su baseOffset si lleva NavMeshAgent) hasta que su parte más baja
+    /// quede sobre el suelo. Devuelve la distancia del pivote al suelo, para ajustar el destino.
+    /// </summary>
+    private float AlignFeetToGround(GameObject enemy, float groundY, bool hasAgent)
+    {
+        Physics.SyncTransforms();
+        if (!TryGetBottom(enemy, out float bottom)) return 0f;
+
+        float pivotToBottom = enemy.transform.position.y - bottom;
+        float lift = (groundY + feetClearance) - bottom;
+
+        if (hasAgent)
+        {
+            NavMeshAgent agent = enemy.GetComponent<NavMeshAgent>();
+            agent.baseOffset += lift;
+        }
+        else
+        {
+            enemy.transform.position += Vector3.up * lift;
+        }
+
+        return pivotToBottom + feetClearance;
+    }
+
+    // Punto más bajo del enemigo: colliders sólidos o, si no hay, sus mallas
+    private static bool TryGetBottom(GameObject enemy, out float bottom)
+    {
+        bottom = float.MaxValue;
+        bool found = false;
+
+        foreach (Collider c in enemy.GetComponentsInChildren<Collider>())
+        {
+            if (c.isTrigger || !c.enabled) continue;
+            bottom = Mathf.Min(bottom, c.bounds.min.y);
+            found = true;
+        }
+        if (found) return true;
+
+        foreach (Renderer r in enemy.GetComponentsInChildren<Renderer>())
+        {
+            if (!(r is MeshRenderer) && !(r is SkinnedMeshRenderer)) continue;
+            bottom = Mathf.Min(bottom, r.bounds.min.y);
+            found = true;
+        }
+        return found;
     }
 
     private Vector3 FlatForward()

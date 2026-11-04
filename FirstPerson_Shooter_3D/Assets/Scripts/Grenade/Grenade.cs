@@ -43,6 +43,7 @@ public class Grenade : MonoBehaviour
     Rigidbody rb;
     float timer;
     bool exploded;
+    bool hasBeenLaunched;
 
     void Awake()
     {
@@ -57,22 +58,46 @@ public class Grenade : MonoBehaviour
 
     public void Launch(Vector3 velocity)
     {
+        if (hasBeenLaunched || exploded) return;
+
+        hasBeenLaunched = true;
+        timer = 0f;
+
+        rb.isKinematic = false;
         rb.AddForce(velocity, ForceMode.VelocityChange);
-        rb.AddTorque(Random.insideUnitSphere * 6f, ForceMode.VelocityChange);
+        rb.AddTorque(UnityEngine.Random.insideUnitSphere * 6f, ForceMode.VelocityChange);
     }
 
     void Update()
     {
+        // No empieza a contar hasta que la granada haya sido lanzada
+        if (!hasBeenLaunched || exploded) 
+            return;
+
         timer += Time.deltaTime;
-        if (timer >= fuseTime) Explode();
+
+        if (timer >= fuseTime)
+            Explode();
     }
 
     void OnCollisionEnter(Collision collision)
     {
-        if (explodeOnImpact) { Explode(); return; }
+        // Si todavía no se ha lanzado, ignoramos las colisiones
+        if (!hasBeenLaunched || exploded)
+            return;
 
+        // Si está activado, explota al primer impacto después del lanzamiento.
+        if (explodeOnImpact) 
+        { 
+            Explode(); 
+            return; 
+        }
+
+        // Si no está activado, reproduce el sonido de rebote.
         if (bounceSound != null && collision.relativeVelocity.magnitude > 2f)
+        {
             AudioSource.PlayClipAtPoint(bounceSound, transform.position, 0.6f);
+        }
     }
 
     void Explode()
