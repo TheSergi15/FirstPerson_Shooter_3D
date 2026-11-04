@@ -137,7 +137,6 @@ MonoBehaviour:
   cancelKey: 38
   holdToAim: 1
   cooldown: 1
-  grenades: 5
   landOnCursor: 1
   throwAngle: 40
   minThrowSpeed: 5
@@ -225,6 +224,9 @@ MonoBehaviour:
   baseWeaponIndex: 0
   scrollCooldown: 0.15
   wrapAround: 1
+  startWithoutBaseWeapon: 0
+  unlockedForTesting: 0
+  pointerModeSwitcher: {fileID: 0}
 --- !u!1 &5944051988441892769
 GameObject:
   m_ObjectHideFlags: 0
@@ -466,7 +468,7 @@ Transform:
   m_GameObject: {fileID: 8272038211862159798}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.14999998, z: 0}
+  m_LocalPosition: {x: 0, y: 0.667, z: -0.003}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
