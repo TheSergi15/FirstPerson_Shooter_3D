@@ -1440,7 +1440,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3539cd22159607b469cec2b117f96817, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ZoneSpawner
-  mode: 1
+  mode: 0
   enemyPrefabs:
   - {fileID: 8814156245261537837, guid: f33b7e89ef814cc47bc73fb4b8be5903, type: 3}
   enemyCount: 1
