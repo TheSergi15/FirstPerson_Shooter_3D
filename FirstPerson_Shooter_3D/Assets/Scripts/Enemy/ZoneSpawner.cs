@@ -3,404 +3,380 @@ using UnityEngine;
 using UnityEngine.AI;
 
 /// <summary>
-/// Genera los enemigos de una zona cuando el RailManager llega al waypoint (SpawnEnemies).
-/// Tres modos:
-///  - Manual:      como antes, cada enemigo con su punto de aparición y destino.
-///  - BehindWalls: detecta solo los muros que tienes delante y aparece justo detrás de ellos.
-///  - Ring:        aparecen en un arco alrededor de un punto central y se juntan en él
-///                 (ideal para el combate de la granada).
-/// En los modos automáticos NO hay que colocar ningún punto a mano.
-/// Selecciona el waypoint en la escena para ver la previsualización (esferas rojas = aparición, verdes = destino).
+/// Spawns enemies behind the first wall in front of this waypoint.
+/// Every spawned enemy receives the same user-placed destination Transform.
 /// </summary>
 public class ZoneSpawner : MonoBehaviour
 {
-    public enum SpawnMode { Manual, BehindWalls, Ring }
+    public enum SpawnMode { BehindWalls, Ring }
 
-    // Usamos una clase serializable para agrupar los datos en el Inspector
-    [System.Serializable]
-    public class SpawnData
-    {
-        public GameObject enemyPrefab;
-        public Transform spawnPoint;       // El "x lugar" donde respawnea
-        public Transform destinationPoint; // El "x lugar" hacia donde se traslada
-    }
+    [Header("Mode")]
+    [SerializeField] private SpawnMode mode = SpawnMode.BehindWalls;
 
-    [Header("Modo")]
-    public SpawnMode mode = SpawnMode.Manual;
+    [Header("Enemies")]
+    [SerializeField] private GameObject[] enemyPrefabs;
+    [Min(1)][SerializeField] private int enemyCount = 2;
 
-    [Header("Manual")]
-    public SpawnData[] enemiesToSpawn;
+    [Header("Fixed destination")]
+    [Tooltip("Create an empty GameObject at the exact point where enemies should go, then assign it here.")]
+    [SerializeField] private Transform destinationPoint;
 
-    [Header("Automático: enemigos")]
-    [Tooltip("Prefabs a generar. Si hay menos que enemigos, se repiten en orden")]
-    public GameObject[] enemyPrefabs;
-    [Min(1)] public int enemyCount = 2;
+    [Header("Behind walls")]
+    [SerializeField] private LayerMask wallMask;
+    [Min(0.1f)][SerializeField] private float maxWallDistance = 40f;
+    [Min(0.05f)][SerializeField] private float maxWallThickness = 4f;
+    [Min(0.01f)][SerializeField] private float defaultWallThickness = 0.5f;
+    [Min(0.05f)][SerializeField] private float spawnClearance = 0.8f;
+    [Range(0f, 180f)][SerializeField] private float spreadAngle = 50f;
+    [Min(0f)][SerializeField] private float fallbackDistance = 14f;
 
-    [Header("Detrás de muros (BehindWalls)")]
-    [Tooltip("Capas que cuentan como muro. Deja fuera la del jugador y la de los enemigos")]
-    public LayerMask wallMask = ~0;
-    [Tooltip("Hasta dónde se buscan muros por delante del waypoint")]
-    public float maxWallDistance = 40f;
-    [Tooltip("Grosor máximo del muro para encontrar su cara trasera")]
-    public float maxWallThickness = 4f;
-    [Tooltip("Grosor que se supone si no se detecta la cara trasera")]
-    public float defaultWallThickness = 0.5f;
-    [Tooltip("Separación entre el muro y el enemigo al aparecer")]
-    public float spawnClearance = 1f;
-    [Tooltip("Abanico horizontal (grados) en el que se reparten los enemigos")]
-    public float spreadAngle = 50f;
-    [Tooltip("A qué distancia del waypoint se detienen los enemigos (se recorta si el muro está más cerca)")]
-    public float destinationDistance = 5f;
-    [Tooltip("Si no hay muro en alguna dirección, aparecen a esta distancia")]
-    public float fallbackDistance = 14f;
+    [Header("Ring mode")]
+    [Tooltip("Optional center for the ring. If empty, the center is placed forward from this waypoint.")]
+    [SerializeField] private Transform centerPoint;
+    [Min(0f)][SerializeField] private float centerDistance = 10f;
+    [Min(0f)][SerializeField] private float ringRadius = 6f;
+    [Range(30f, 360f)][SerializeField] private float arcDegrees = 240f;
+    [Min(0f)][SerializeField] private float gatherRadius = 1.5f;
 
-    [Header("Alrededor de un punto (Ring)")]
-    [Tooltip("Opcional. Si está vacío, el centro está 'Center Distance' metros por delante del waypoint")]
-    public Transform centerPoint;
-    public float centerDistance = 10f;
-    [Tooltip("Distancia del centro a la que aparecen los enemigos")]
-    public float ringRadius = 6f;
-    [Range(30f, 360f)]
-    [Tooltip("Arco del lado lejano al jugador en el que aparecen (360 = círculo completo)")]
-    public float arcDegrees = 240f;
-    [Tooltip("Radio en el que se agrupan al llegar. Debe ser MENOR que el radio de la granada")]
-    public float gatherRadius = 1.5f;
+    [Header("Placement")]
+    [Tooltip("Extra height of the visible enemy above the NavMesh. This does not move the NavMeshAgent root.")]
+    [SerializeField] private float spawnHeightOffset = 0.1f;
+    [SerializeField] private LayerMask groundMask;
+    [Tooltip("Solid geometry that must not overlap an enemy spawn. Usually walls and large obstacles; exclude the floor.")]
+    [SerializeField] private LayerMask obstructionMask;
+    [Tooltip("Existing enemies/actors to avoid when placing new enemies.")]
+    [SerializeField] private LayerMask occupancyMask;
+    [Min(0.1f)][SerializeField] private float navMeshSampleDistance = 1f;
+    [Min(0f)][SerializeField] private float spawnSeparation = 0.2f;
+    [Min(0.1f)][SerializeField] private float groundRayHeight = 5f;
+    [Min(0.1f)][SerializeField] private float groundRayDistance = 30f;
+    [Min(1)][SerializeField] private int placementAttempts = 8;
+    [SerializeField] private bool debugLog = true;
 
-    [Header("Común")]
-    public LayerMask groundMask = ~0;
-    [Tooltip("Apoya los pies del enemigo sobre el suelo y corrige la altura de su destino (evita que se hunda)")]
-    public bool alignFeetToGround = true;
-    [Tooltip("Margen entre los pies y el suelo")]
-    public float feetClearance = 0.02f;
-    [Tooltip("Ajusta las posiciones al NavMesh si existe (para enemigos con NavMeshAgent)")]
-    public bool snapToNavMesh = true;
-    public float navMeshSnapDistance = 3f;
-    [Tooltip("Altura desde la que se lanzan los rayos para detectar muros")]
-    public float originHeight = 1f;
-    public bool debugLog = true;
+    private struct SpawnPlan { public Vector3 position; public Vector3 destination; }
+    private readonly List<SpawnPlan> previewPlans = new List<SpawnPlan>();
+    private readonly List<Vector3> reservedPositions = new List<Vector3>();
+    private readonly RaycastHit[] rayHits = new RaycastHit[32];
+    private bool drawingGizmos;
 
-    /// <summary>Cuántos enemigos genera (úsalo para igualar Enemies To Kill del RailStop).</summary>
-    public int EnemyCount => mode == SpawnMode.Manual
-        ? (enemiesToSpawn != null ? enemiesToSpawn.Length : 0)
-        : enemyCount;
-
-    private struct Plan
-    {
-        public Vector3 spawn;
-        public Vector3 dest;
-    }
-
-    private readonly RaycastHit[] hitsBuf = new RaycastHit[16];
-    private bool quiet; // sin avisos en consola (previsualización del editor)
+    public int EnemyCount => Mathf.Max(0, enemyCount);
 
     private void Start()
     {
-        // Aviso si el RailStop de este waypoint pide un número distinto de bajas
         RailStop stop = GetComponent<RailStop>();
-        if (stop != null && stop.leaveCondition == RailAdvanceCondition.KillEnemies
-            && stop.enemiesToKill != EnemyCount)
-        {
-            Debug.LogWarning($"[ZoneSpawner] {name}: genera {EnemyCount} enemigos pero el RailStop pide matar " +
-                             $"{stop.enemiesToKill}. Iguálalos o la ruta no avanzará bien.", this);
-        }
+        if (stop != null && stop.leaveCondition == RailAdvanceCondition.KillEnemies && stop.enemiesToKill != EnemyCount)
+            Debug.LogWarning($"[ZoneSpawner] {name}: genera {enemyCount} enemigos, pero RailStop pide {stop.enemiesToKill}.", this);
     }
 
-    // ───────── API que usa el RailManager ─────────
     public void SpawnEnemies()
     {
-        if (mode == SpawnMode.Manual)
+        if (mode == SpawnMode.BehindWalls && destinationPoint == null)
         {
-            SpawnManual();
+            Debug.LogError($"[ZoneSpawner] {name}: asigna Destination Point en el Inspector.", this);
             return;
         }
-
         if (enemyPrefabs == null || enemyPrefabs.Length == 0)
         {
-            Debug.LogError($"[ZoneSpawner] {name}: faltan 'Enemy Prefabs' para el modo {mode}.", this);
+            Debug.LogError($"[ZoneSpawner] {name}: asigna al menos un prefab en Enemy Prefabs.", this);
             return;
         }
 
-        var plans = new List<Plan>();
-        quiet = false;
-        BuildPlan(new System.Random(), plans);
+        BuildSpawnPlans(previewPlans);
+        reservedPositions.Clear();
+        int spawned = 0;
 
-        for (int i = 0; i < plans.Count; i++)
+        for (int i = 0; i < previewPlans.Count; i++)
         {
             GameObject prefab = enemyPrefabs[i % enemyPrefabs.Length];
             if (prefab == null) continue;
 
-            Vector3 flat = Vector3.ProjectOnPlane(plans[i].dest - plans[i].spawn, Vector3.up);
-            Quaternion rot = flat.sqrMagnitude > 0.001f ? Quaternion.LookRotation(flat) : Quaternion.identity;
-
-            GameObject enemy = Instantiate(prefab, plans[i].spawn, rot);
-
-            // Los pies sobre el suelo. Sin NavMeshAgent, el destino se sube la altura del pivote:
-            // si no, el enemigo caminaría hasta que su pivote toque el suelo y se hundiría.
-            bool hasAgent = enemy.GetComponent<NavMeshAgent>() != null;
-            Vector3 dest = plans[i].dest;
-            if (alignFeetToGround)
+            Vector3 spawn = previewPlans[i].position;
+            if (!IsPositionFree(prefab, spawn, reservedPositions) &&
+                !TryFindNearbyPosition(prefab, spawn, reservedPositions, out spawn))
             {
-                float pivotToGround = AlignFeetToGround(enemy, plans[i].spawn.y, hasAgent);
-                if (!hasAgent) dest.y += pivotToGround;
+                if (debugLog) Debug.LogWarning($"[ZoneSpawner] {name}: no hay espacio libre para el enemigo {i + 1}; se omite.", this);
+                continue;
             }
 
+            reservedPositions.Add(spawn);
+            Vector3 destination = mode == SpawnMode.BehindWalls ? destinationPoint.position : previewPlans[i].destination;
+            Vector3 flatDirection = Vector3.ProjectOnPlane(destination - spawn, Vector3.up);
+            Quaternion rotation = flatDirection.sqrMagnitude > 0.001f
+                ? Quaternion.LookRotation(flatDirection)
+                : Quaternion.identity;
+
+            GameObject enemy = Instantiate(prefab, spawn, rotation);
+            ConfigureAgent(enemy, spawn);
+            EnemyVisualGrounding grounding = enemy.GetComponent<EnemyVisualGrounding>();
+            if (grounding != null) grounding.SetHeightOffset(spawnHeightOffset);
+            else if (Mathf.Abs(spawnHeightOffset) > 0.001f)
+                Debug.LogWarning($"[ZoneSpawner] {enemy.name}: añade EnemyVisualGrounding al prefab para aplicar Spawn Height Offset sin sacar el agente del NavMesh.", enemy);
+
             EnemyMover mover = enemy.GetComponent<EnemyMover>();
-            if (mover != null) mover.SetDestination(MakeDestination(dest));
-        }
-
-        if (debugLog) Debug.Log($"[ZoneSpawner] {name}: {plans.Count} enemigos generados ({mode}).", this);
-    }
-
-    private void SpawnManual()
-    {
-        if (enemiesToSpawn == null) return;
-
-        foreach (var data in enemiesToSpawn)
-        {
-            if (data.enemyPrefab == null || data.spawnPoint == null) continue;
-
-            // 1. Instanciamos al enemigo en el punto de aparición
-            GameObject enemy = Instantiate(data.enemyPrefab, data.spawnPoint.position, data.spawnPoint.rotation);
-
-            // 2. Buscamos su script de movimiento y le pasamos el destino
-            EnemyMover mover = enemy.GetComponent<EnemyMover>();
-            if (mover != null && data.destinationPoint != null)
-                mover.SetDestination(data.destinationPoint);
-        }
-    }
-
-    // ───────── Cálculo de posiciones ─────────
-    private void BuildPlan(System.Random rng, List<Plan> plans)
-    {
-        plans.Clear();
-        int n = Mathf.Max(1, enemyCount);
-        Vector3 fwd = FlatForward();
-
-        if (mode == SpawnMode.BehindWalls)
-        {
-            Vector3 origin = transform.position + Vector3.up * originHeight;
-
-            for (int i = 0; i < n; i++)
+            if (mover != null)
             {
-                float t = n == 1 ? 0f : (i / (float)(n - 1)) - 0.5f;
-                Vector3 dir = Quaternion.AngleAxis(t * spreadAngle, Vector3.up) * fwd;
-
-                Vector3 spawn;
-                float wallDist;
-                if (!TryFindBehindWall(origin, dir, out spawn, out wallDist))
+                mover.SetDestination(mode == SpawnMode.BehindWalls ? destinationPoint : MakeDestination(destination));
+            }
+            else
+            {
+                NavMeshAgent agent = enemy.GetComponent<NavMeshAgent>();
+                if (agent != null && agent.enabled && agent.isOnNavMesh)
                 {
-                    wallDist = fallbackDistance;
-                    spawn = Ground(transform.position + dir * fallbackDistance);
-                    if (!quiet)
-                        Debug.LogWarning($"[ZoneSpawner] {name}: no hay muro en la dirección {i}; " +
-                                         $"aparece a {fallbackDistance} m. Revisa 'Wall Mask' y la rotación del waypoint (su flecha azul debe mirar a los muros).", this);
+                    if (NavMesh.SamplePosition(destination, out NavMeshHit targetHit,
+                            navMeshSampleDistance, agent.areaMask))
+                        agent.SetDestination(targetHit.position);
+                    else
+                        Debug.LogWarning($"[ZoneSpawner] {name}: Destination Point no está cerca del NavMesh.", this);
                 }
-
-                float destDist = Mathf.Clamp(destinationDistance, 1.5f, Mathf.Max(1.5f, wallDist - 1f));
-                Vector3 dest = Ground(transform.position + dir * destDist);
-
-                plans.Add(new Plan { spawn = SnapNav(spawn), dest = SnapNav(dest) });
+                else Debug.LogWarning($"[ZoneSpawner] {enemy.name}: falta un NavMeshAgent activo sobre el NavMesh.", enemy);
             }
+            spawned++;
         }
-        else // Ring
-        {
-            Vector3 center = centerPoint != null ? centerPoint.position
-                                                 : transform.position + fwd * centerDistance;
-            center = Ground(center);
 
-            for (int i = 0; i < n; i++)
-            {
-                float t = n == 1 ? 0f : (i / (float)(n - 1)) - 0.5f;
-                Vector3 dir = Quaternion.AngleAxis(t * arcDegrees, Vector3.up) * fwd;
-                Vector3 spawn = Ground(center + dir * ringRadius);
-
-                float ang = (float)(rng.NextDouble() * Mathf.PI * 2.0);
-                float rad = Mathf.Sqrt((float)rng.NextDouble()) * gatherRadius;
-                Vector3 dest = Ground(center + new Vector3(Mathf.Cos(ang), 0f, Mathf.Sin(ang)) * rad);
-
-                plans.Add(new Plan { spawn = SnapNav(spawn), dest = SnapNav(dest) });
-            }
-        }
+        if (debugLog) Debug.Log($"[ZoneSpawner] {name}: generó {spawned}/{enemyCount} enemigos.", this);
+        reservedPositions.Clear();
     }
 
-    /// <summary>Busca el primer muro en esa dirección y devuelve un punto justo detrás de él.</summary>
-    private bool TryFindBehindWall(Vector3 origin, Vector3 dir, out Vector3 spawn, out float wallDistance)
+    private void BuildSpawnPlans(List<SpawnPlan> output)
     {
-        spawn = origin;
-        wallDistance = 0f;
+        output.Clear();
+        int count = Mathf.Max(1, enemyCount);
+        Vector3 forward = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
+        if (forward.sqrMagnitude < 0.001f) forward = Vector3.forward;
 
-        int count = Physics.RaycastNonAlloc(new Ray(origin, dir), hitsBuf, maxWallDistance,
-                                            wallMask, QueryTriggerInteraction.Ignore);
-        float best = float.MaxValue;
-        RaycastHit wall = default;
-        bool found = false;
+        if (mode == SpawnMode.Ring)
+        {
+            BuildRingPlans(output, count, forward);
+            return;
+        }
 
         for (int i = 0; i < count; i++)
         {
-            if (!IsWallCandidate(hitsBuf[i].collider)) continue;
-            if (hitsBuf[i].distance < best)
+            float t = count == 1 ? 0f : (i / (float)(count - 1)) - 0.5f;
+            Vector3 direction = Quaternion.AngleAxis(t * spreadAngle, Vector3.up) * forward;
+            if (!TryFindSpawnBehindWall(direction, out Vector3 spawn))
             {
-                best = hitsBuf[i].distance;
-                wall = hitsBuf[i];
-                found = true;
+                Vector3 fallback = transform.position + direction * fallbackDistance;
+                if (!TryFindGround(fallback, out spawn) || !TrySnapToNavMesh(spawn, out spawn))
+                {
+                    if (!drawingGizmos) Debug.LogWarning($"[ZoneSpawner] {name}: no se encontró spawn detrás de muro ni en el fallback.", this);
+                    continue;
+                }
             }
+
+            // Keep planned spawns apart even before anything is instantiated.
+            bool overlapsPlan = false;
+            for (int p = 0; p < output.Count; p++)
+            {
+                if (Vector3.Distance(output[p].position, spawn) < spawnSeparation + 0.5f)
+                { overlapsPlan = true; break; }
+            }
+            if (!overlapsPlan) output.Add(new SpawnPlan { position = spawn, destination = destinationPoint != null ? destinationPoint.position : spawn });
         }
-        if (!found) return false;
+    }
 
-        wallDistance = best;
-
-        // Cara trasera del muro: se lanza un rayo desde el otro lado hacia el muro
-        Vector3 exit;
-        Vector3 farPoint = wall.point + dir * maxWallThickness;
-        if (wall.collider.Raycast(new Ray(farPoint, -dir), out RaycastHit exitHit, maxWallThickness))
-            exit = exitHit.point;
-        else
-            exit = wall.point + dir * defaultWallThickness;
-
-        // Un poco más allá de la cara trasera, y si queda dentro de otro collider, se aleja
-        Vector3 p = exit + dir * spawnClearance;
-        for (int k = 0; k < 5; k++)
+    private void BuildRingPlans(List<SpawnPlan> output, int count, Vector3 forward)
+    {
+        Vector3 desiredCenter = centerPoint != null ? centerPoint.position : transform.position + forward * centerDistance;
+        if (!TryFindGround(desiredCenter, out Vector3 center)) center = desiredCenter;
+        for (int i = 0; i < count; i++)
         {
-            Vector3 g = Ground(p);
-            if (!Physics.CheckSphere(g + Vector3.up * 0.9f, 0.4f, wallMask, QueryTriggerInteraction.Ignore))
-            {
-                spawn = g;
-                return true;
-            }
-            p += dir * 0.6f;
-        }
+            float t = count == 1 ? 0f : (i / (float)(count - 1)) - 0.5f;
+            Vector3 direction = Quaternion.AngleAxis(t * arcDegrees, Vector3.up) * forward;
+            Vector3 desiredSpawn = center + direction * ringRadius;
+            if (!TryFindGround(desiredSpawn, out Vector3 spawn) || !TrySnapToNavMesh(spawn, out spawn)) continue;
 
-        spawn = Ground(p);
+            // Distribute gathering destinations evenly inside a disk; stable values keep Edit Mode gizmos still.
+            float angle = i * 2.39996323f;
+            float radius = gatherRadius * Mathf.Sqrt((i + 0.5f) / count);
+            Vector3 desiredDestination = center + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * radius;
+            Vector3 destination = center;
+            if (TryFindGround(desiredDestination, out Vector3 groundedDestination) && TrySnapToNavMesh(groundedDestination, out Vector3 navDestination))
+                destination = navDestination;
+
+            bool overlapsPlan = false;
+            for (int p = 0; p < output.Count; p++)
+                if (Vector3.Distance(output[p].position, spawn) < spawnSeparation + 0.5f) { overlapsPlan = true; break; }
+            if (!overlapsPlan) output.Add(new SpawnPlan { position = spawn, destination = destination });
+        }
+    }
+
+    private bool TryFindSpawnBehindWall(Vector3 direction, out Vector3 spawn)
+    {
+        spawn = default;
+        Vector3 origin = transform.position + Vector3.up * groundRayHeight;
+        int hitCount = Physics.RaycastNonAlloc(origin, direction, rayHits, maxWallDistance,
+            wallMask, QueryTriggerInteraction.Ignore);
+
+        float nearestDistance = float.MaxValue;
+        RaycastHit wallHit = default;
+        for (int i = 0; i < hitCount; i++)
+        {
+            Collider col = rayHits[i].collider;
+            if (col == null || col.isTrigger || col.GetComponentInParent<EnemyMover>() != null ||
+                col.GetComponentInParent<CharacterController>() != null) continue;
+            if (col.attachedRigidbody != null && !col.attachedRigidbody.isKinematic) continue;
+            if (rayHits[i].distance < nearestDistance)
+            { nearestDistance = rayHits[i].distance; wallHit = rayHits[i]; }
+        }
+        if (nearestDistance == float.MaxValue) return false;
+
+        float thickness = defaultWallThickness;
+        float reverseProbeDistance = Mathf.Max(defaultWallThickness, maxWallThickness);
+        Vector3 beyondWall = wallHit.point + direction * reverseProbeDistance;
+        if (wallHit.collider.Raycast(new Ray(beyondWall, -direction), out RaycastHit backFace, reverseProbeDistance))
+            thickness = Vector3.Distance(wallHit.point, backFace.point);
+        thickness = Mathf.Clamp(thickness, 0.01f, maxWallThickness);
+
+        Vector3 candidate = wallHit.point + direction * (thickness + spawnClearance);
+        for (int i = 0; i < placementAttempts; i++)
+        {
+            if (TryFindGround(candidate, out Vector3 grounded) &&
+                TrySnapToNavMesh(grounded, out spawn) &&
+                !IsBlockedByWorld(spawn)) return true;
+            candidate += direction * Mathf.Max(0.25f, spawnClearance);
+        }
+        return false;
+    }
+
+    private bool TryFindNearbyPosition(GameObject prefab, Vector3 origin, List<Vector3> reserved, out Vector3 result)
+    {
+        float radius = GetAgentRadius(prefab);
+        for (int i = 0; i < placementAttempts * 2; i++)
+        {
+            float angle = i * 45f;
+            float distance = radius * 2f + spawnSeparation + (i / 8) * radius;
+            Vector3 candidate = origin + Quaternion.AngleAxis(angle, Vector3.up) * Vector3.forward * distance;
+            if (!TryFindGround(candidate, out candidate) || !TrySnapToNavMesh(candidate, out candidate)) continue;
+            if (IsPositionFree(prefab, candidate, reserved)) { result = candidate; return true; }
+        }
+        result = default;
+        return false;
+    }
+
+    private bool IsPositionFree(GameObject prefab, Vector3 point, List<Vector3> reserved)
+    {
+        float radius = GetAgentRadius(prefab);
+        float height = GetAgentHeight(prefab);
+        Vector3 lower = point + Vector3.up * (radius + 0.02f);
+        Vector3 upper = point + Vector3.up * Mathf.Max(radius + 0.03f, height - radius);
+        if (obstructionMask.value != 0 && Physics.CheckCapsule(lower, upper, radius,
+                obstructionMask, QueryTriggerInteraction.Ignore)) return false;
+        if (occupancyMask.value != 0 && Physics.CheckCapsule(lower, upper, radius + spawnSeparation,
+                occupancyMask, QueryTriggerInteraction.Ignore)) return false;
+        foreach (Vector3 other in reserved)
+            if (Vector2.Distance(new Vector2(point.x, point.z), new Vector2(other.x, other.z)) < radius * 2f + spawnSeparation)
+                return false;
         return true;
     }
 
-    // El muro no puede ser el jugador, un enemigo, un pickup ni un objeto físico que se mueve
-    private static bool IsWallCandidate(Collider c)
+    private bool IsBlockedByWorld(Vector3 point)
     {
-        if (c.isTrigger) return false;
-        if (c.GetComponentInParent<CharacterController>() != null) return false;
-        if (c.GetComponentInParent<EnemyHealth>() != null) return false;
-        if (c.GetComponentInParent<HealthPickup>() != null) return false;
-        if (c.attachedRigidbody != null && !c.attachedRigidbody.isKinematic) return false;
-        return true;
+        const float radius = 0.35f;
+        return obstructionMask.value != 0 && Physics.CheckCapsule(
+            point + Vector3.up * radius,
+            point + Vector3.up * 1.8f,
+            radius,
+            obstructionMask,
+            QueryTriggerInteraction.Ignore);
     }
 
-    /// <summary>
-    /// Sube al enemigo (o su baseOffset si lleva NavMeshAgent) hasta que su parte más baja
-    /// quede sobre el suelo. Devuelve la distancia del pivote al suelo, para ajustar el destino.
-    /// </summary>
-    private float AlignFeetToGround(GameObject enemy, float groundY, bool hasAgent)
+    private void ConfigureAgent(GameObject enemy, Vector3 spawn)
     {
-        Physics.SyncTransforms();
-        if (!TryGetBottom(enemy, out float bottom)) return 0f;
-
-        float pivotToBottom = enemy.transform.position.y - bottom;
-        float lift = (groundY + feetClearance) - bottom;
-
-        if (hasAgent)
+        NavMeshAgent agent = enemy.GetComponent<NavMeshAgent>();
+        if (agent == null) return;
+        if (!NavMesh.SamplePosition(spawn, out NavMeshHit hit, navMeshSampleDistance, agent.areaMask))
         {
-            NavMeshAgent agent = enemy.GetComponent<NavMeshAgent>();
-            agent.baseOffset += lift;
+            Debug.LogError($"[ZoneSpawner] {enemy.name}: el spawn no está sobre un NavMesh compatible.", enemy);
+            agent.enabled = false;
+            return;
         }
-        else
-        {
-            enemy.transform.position += Vector3.up * lift;
-        }
-
-        return pivotToBottom + feetClearance;
+        if (!agent.enabled) agent.enabled = true;
+        if (!agent.isOnNavMesh && !agent.Warp(hit.position))
+            Debug.LogError($"[ZoneSpawner] {enemy.name}: NavMeshAgent no pudo colocarse sobre el NavMesh.", enemy);
     }
 
-    // Punto más bajo del enemigo: colliders sólidos o, si no hay, sus mallas
-    private static bool TryGetBottom(GameObject enemy, out float bottom)
+    private bool TryFindGround(Vector3 point, out Vector3 groundPoint)
     {
-        bottom = float.MaxValue;
-        bool found = false;
-
-        foreach (Collider c in enemy.GetComponentsInChildren<Collider>())
-        {
-            if (c.isTrigger || !c.enabled) continue;
-            bottom = Mathf.Min(bottom, c.bounds.min.y);
-            found = true;
-        }
-        if (found) return true;
-
-        foreach (Renderer r in enemy.GetComponentsInChildren<Renderer>())
-        {
-            if (!(r is MeshRenderer) && !(r is SkinnedMeshRenderer)) continue;
-            bottom = Mathf.Min(bottom, r.bounds.min.y);
-            found = true;
-        }
-        return found;
+        Vector3 origin = point + Vector3.up * groundRayHeight;
+        if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, groundRayHeight + groundRayDistance,
+                groundMask, QueryTriggerInteraction.Ignore))
+        { groundPoint = hit.point; return true; }
+        groundPoint = default;
+        return false;
     }
 
-    private Vector3 FlatForward()
+    private bool TrySnapToNavMesh(Vector3 point, out Vector3 navPoint)
     {
-        Vector3 f = Vector3.ProjectOnPlane(transform.forward, Vector3.up);
-        return f.sqrMagnitude > 0.001f ? f.normalized : Vector3.forward;
+        if (NavMesh.SamplePosition(point, out NavMeshHit hit, navMeshSampleDistance, NavMesh.AllAreas))
+        { navPoint = hit.position; return true; }
+        navPoint = default;
+        return false;
     }
 
-    // Baja el punto hasta el suelo
-    private Vector3 Ground(Vector3 p)
+    private Transform MakeDestination(Vector3 position)
     {
-        if (Physics.Raycast(p + Vector3.up * 5f, Vector3.down, out RaycastHit hit, 30f,
-                            groundMask, QueryTriggerInteraction.Ignore))
-            return hit.point;
-        return new Vector3(p.x, transform.position.y, p.z);
+        GameObject target = new GameObject("RingEnemyDestination");
+        target.transform.SetParent(transform);
+        target.transform.position = position;
+        return target.transform;
     }
 
-    private Vector3 SnapNav(Vector3 p)
+    private static float GetAgentRadius(GameObject prefab)
     {
-        if (snapToNavMesh && NavMesh.SamplePosition(p, out NavMeshHit nh, navMeshSnapDistance, NavMesh.AllAreas))
-            return nh.position;
-        return p;
+        NavMeshAgent agent = prefab.GetComponent<NavMeshAgent>();
+        return agent != null ? Mathf.Max(0.1f, agent.radius) : 0.35f;
     }
 
-    // El EnemyMover pide un Transform como destino: se crea uno vacío en ese punto
-    private Transform MakeDestination(Vector3 pos)
+    private static float GetAgentHeight(GameObject prefab)
     {
-        var go = new GameObject("SpawnDestination");
-        go.transform.SetParent(transform);
-        go.transform.position = pos;
-        return go.transform;
+        NavMeshAgent agent = prefab.GetComponent<NavMeshAgent>();
+        return agent != null ? Mathf.Max(agent.height, agent.radius * 2f) : 1.8f;
     }
 
-    // ───────── Previsualización en el editor ─────────
     private void OnDrawGizmosSelected()
     {
-        if (mode == SpawnMode.Manual) return;
+        drawingGizmos = true;
+        BuildSpawnPlans(previewPlans);
+        drawingGizmos = false;
 
-        var plans = new List<Plan>();
-        quiet = true;
-        BuildPlan(new System.Random(7), plans);
-        quiet = false;
-
-        Vector3 fwd = FlatForward();
-
-        if (mode == SpawnMode.BehindWalls)
+        if (mode == SpawnMode.BehindWalls && destinationPoint != null)
         {
-            Gizmos.color = new Color(1f, 1f, 1f, 0.25f);
-            Vector3 o = transform.position + Vector3.up * originHeight;
-            Gizmos.DrawRay(o, fwd * 3f);
+            Gizmos.color = new Color(0.3f, 1f, 0.4f, 0.95f);
+            Gizmos.DrawSphere(destinationPoint.position, 0.22f);
         }
-        else
+        if (mode == SpawnMode.Ring)
         {
-            Vector3 c = centerPoint != null ? centerPoint.position : transform.position + fwd * centerDistance;
-            Gizmos.color = new Color(1f, 0.85f, 0.1f);
-            Gizmos.DrawWireSphere(c, gatherRadius);
-            Gizmos.color = new Color(1f, 0.85f, 0.1f, 0.35f);
-            Gizmos.DrawWireSphere(c, ringRadius);
+            Vector3 forward = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
+            if (forward.sqrMagnitude < 0.001f) forward = Vector3.forward;
+            Vector3 center = centerPoint != null ? centerPoint.position : transform.position + forward * centerDistance;
+            Gizmos.color = new Color(1f, 0.8f, 0.1f, 0.85f);
+            Gizmos.DrawWireSphere(center, ringRadius);
+            Gizmos.DrawWireSphere(center, gatherRadius);
         }
 
-        for (int i = 0; i < plans.Count; i++)
+        for (int i = 0; i < previewPlans.Count; i++)
         {
-            Gizmos.color = new Color(1f, 0.3f, 0.25f);
-            Gizmos.DrawWireSphere(plans[i].spawn + Vector3.up * 0.5f, 0.5f);
-
-            Gizmos.color = new Color(0.3f, 1f, 0.4f);
-            Gizmos.DrawWireSphere(plans[i].dest + Vector3.up * 0.2f, 0.25f);
-
-            Gizmos.color = new Color(1f, 1f, 1f, 0.5f);
-            Gizmos.DrawLine(plans[i].spawn + Vector3.up * 0.5f, plans[i].dest + Vector3.up * 0.2f);
+            Gizmos.color = new Color(1f, 0.3f, 0.25f, 0.9f);
+            Gizmos.DrawWireSphere(previewPlans[i].position, 0.3f);
+            if (Mathf.Abs(spawnHeightOffset) > 0.001f)
+            {
+                Gizmos.color = new Color(1f, 0.8f, 0.1f, 0.9f);
+                Gizmos.DrawLine(previewPlans[i].position,
+                    previewPlans[i].position + Vector3.up * spawnHeightOffset);
+            }
+            if (mode == SpawnMode.BehindWalls && destinationPoint != null)
+            {
+                Gizmos.color = Color.white;
+                Gizmos.DrawLine(previewPlans[i].position, destinationPoint.position);
+            }
+            else if (mode == SpawnMode.Ring)
+            {
+                Gizmos.color = new Color(0.3f, 1f, 0.4f, 0.95f);
+                Gizmos.DrawSphere(previewPlans[i].destination, 0.22f);
+                Gizmos.color = Color.white;
+                Gizmos.DrawLine(previewPlans[i].position, previewPlans[i].destination);
+            }
         }
     }
 }
