@@ -14,9 +14,7 @@ GameObject:
   - component: {fileID: 8803265909511739195}
   - component: {fileID: 176465923514083936}
   - component: {fileID: 6351680340306302854}
-  - component: {fileID: 2860164789986698581}
-  - component: {fileID: 757272026070630375}
-  - component: {fileID: 5247811760802942780}
+  - component: {fileID: 5742320482149732329}
   m_Layer: 7
   m_Name: Enemy
   m_TagString: Untagged
@@ -34,8 +32,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 2, y: 2, z: 2}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -166,7 +164,7 @@ MonoBehaviour:
   backgroundColor: {r: 0, g: 0, b: 0, a: 0.65}
   hitSfx: 
   deathSfx: 
---- !u!114 &2860164789986698581
+--- !u!114 &5742320482149732329
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -175,41 +173,22 @@ MonoBehaviour:
   m_GameObject: {fileID: 8814156245261537837}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 43cc7ad993e111f4f8d9523f24936704, type: 3}
+  m_Script: {fileID: 11500000, guid: 2d27f1f4ddd77324ba2c5a73859aedc8, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EnemyMover
-  moveSpeed: 6
-  targetDestination: {fileID: 0}
-  agent: {fileID: 8803265909511739195}
-  stoppingDistance: 0.35
-  destinationSampleDistance: 1
---- !u!114 &757272026070630375
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8814156245261537837}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3aaa2ebf1f5c8c54da1f811d2c4efb9b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EnemyAttack
-  attackDamage: 10
-  timeBetweenAttacks: 3
---- !u!114 &5247811760802942780
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8814156245261537837}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5d708d5a3aaccfa48b842740df3602f4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EnemyVisualGrounding
-  visualRoot: {fileID: 8804954594923132877}
-  alignRootCapsuleToFeet: 1
-  alignVisualOnAwake: 1
-  heightOffset: 0.3
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyCombatMover
+  arriveDistance: 0.35
+  stuckTimeout: 1.5
+  faceTargetWhenStopped: 1
+  turnSpeed: 8
+  lookTarget: {fileID: 3985688650110840062, guid: 993a4600f9e174346a834374ab292bb9, type: 3}
+  canAttack: 1
+  damage: 10
+  attackCooldown: 2
+  firstAttackDelay: 1
+  attackWindup: 0.3
+  attackRange: 0
+  accuracy: 0.8
+  animator: {fileID: 0}
+  speedParameter: 
+  animatorDamp: 0.1
+  attackTrigger: 

@@ -1,5 +1,5 @@
-
 using UnityEngine;
+using UnityEngine.Rendering;
 
 public class HealthPickup : MonoBehaviour
 {
@@ -11,11 +11,20 @@ public class HealthPickup : MonoBehaviour
     [Tooltip("Prefab opcional. Si está vacío, se genera el efecto por código.")]
     public GameObject collectEffect;
 
+    [Tooltip("Segundos tras los que se destruye el efecto del prefab.")]
+    [Min(0.1f)] public float collectEffectLifetime = 3f;
+
     [Tooltip("Altura desde donde aparecen las partículas")]
     public float effectHeight = 0.5f;
 
+    private bool collected;
+
     public void OnShot()
     {
+        // Evita curar dos veces si llegan dos disparos en el mismo fotograma.
+        if (collected) return;
+        collected = true;
+
         // Curar al jugador.
         if (PlayerHealth.Instance != null)
         {
@@ -34,12 +43,13 @@ public class HealthPickup : MonoBehaviour
         // Si existe un prefab personalizado, utilizarlo.
         if (collectEffect != null)
         {
-            Instantiate(
+            GameObject effect = Instantiate(
                 collectEffect,
                 transform.position,
                 Quaternion.identity
             );
 
+            Destroy(effect, collectEffectLifetime);
             return;
         }
 
@@ -56,6 +66,10 @@ public class HealthPickup : MonoBehaviour
 
         ParticleSystem particles =
             effectObject.AddComponent<ParticleSystem>();
+
+        // AddComponent arranca el sistema solo con valores por defecto.
+        // Hay que pararlo antes de configurar la duración, o Unity da error.
+        particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
 
         // CONFIGURACIÓN PRINCIPAL
         var main = particles.main;
@@ -138,25 +152,44 @@ public class HealthPickup : MonoBehaviour
 
         particleRenderer.renderMode = ParticleSystemRenderMode.Billboard;
 
-        Shader particleShader =
-            Shader.Find("Universal Render Pipeline/Particles/Unlit");
+        Material particleMaterial = CreateParticleMaterial();
 
-        if (particleShader == null)
-            particleShader = Shader.Find("Particles/Standard Unlit");
-
-        if (particleShader == null)
-            particleShader = Shader.Find("Sprites/Default");
-
-        if (particleShader != null)
+        if (particleMaterial != null)
         {
-            Material particleMaterial = new Material(particleShader);
-
             particleRenderer.material = particleMaterial;
-
             Destroy(particleMaterial, 2f);
         }
 
         // INICIAR EFECTO
         particles.Play();
+
+        // Seguridad: si el stopAction no llegara a destruirlo, se limpia por tiempo.
+        Destroy(effectObject, 2f);
+    }
+
+    private Material CreateParticleMaterial()
+    {
+        // URP: el material creado por código es opaco por defecto,
+        // así que hay que pasarlo a transparente para que se vea el desvanecimiento.
+        Shader urp = Shader.Find("Universal Render Pipeline/Particles/Unlit");
+        if (urp != null)
+        {
+            Material m = new Material(urp);
+            m.SetFloat("_Surface", 1f);   // 1 = Transparent
+            m.SetFloat("_Blend", 0f);     // Alpha
+            m.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
+            m.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
+            m.SetFloat("_ZWrite", 0f);
+            m.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            m.SetOverrideTag("RenderType", "Transparent");
+            m.renderQueue = (int)RenderQueue.Transparent;
+            return m;
+        }
+
+        // Pipeline Built-in
+        Shader builtIn = Shader.Find("Particles/Standard Unlit");
+        if (builtIn == null) builtIn = Shader.Find("Sprites/Default");
+
+        return builtIn != null ? new Material(builtIn) : null;
     }
 }
