@@ -167,7 +167,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HealthPickup
   healAmount: 30
   collectEffect: {fileID: 0}
-  collectEffectLifetime: 3
   effectHeight: 0.5
 --- !u!65 &21772640
 BoxCollider:
@@ -1335,7 +1334,7 @@ Transform:
   m_GameObject: {fileID: 537199030}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 8.1, z: -32.44}
+  m_LocalPosition: {x: 0, y: 8.68, z: -32.44}
   m_LocalScale: {x: 14.44, y: 3, z: 86.88}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1445,37 +1444,21 @@ MonoBehaviour:
   enemyPrefabs:
   - {fileID: 8814156245261537837, guid: f33b7e89ef814cc47bc73fb4b8be5903, type: 3}
   enemyCount: 1
-  waitForRailArrival: 1
-  spawnOnlyOnce: 1
-  destinationMode: 0
-  destinationPoint: {fileID: 2073706879}
-  minCombatDistance: 6
-  maxCombatDistance: 14
-  combatHalfAngle: 35
-  combatSeparation: 1.8
-  playerEyeHeight: 1.6
-  enemyEyeHeight: 1.5
-  lineOfSightMask:
-    serializedVersion: 2
-    m_Bits: 0
-  combatSampleRadius: 1
+  destinationPoint: {fileID: 0}
   wallMask:
     serializedVersion: 2
     m_Bits: 512
-  wallRayHeight: 1
   maxWallDistance: -35
   maxWallThickness: 6
   defaultWallThickness: 4
   spawnClearance: 100
   spreadAngle: 55
   fallbackDistance: 12
-  requireHiddenSpawn: 1
   centerPoint: {fileID: 0}
   centerDistance: 10
   ringRadius: 6
   arcDegrees: 240
   gatherRadius: 1.5
-  autoGroundFeet: 1
   spawnHeightOffset: 0.1
   groundMask:
     serializedVersion: 2
@@ -1610,7 +1593,7 @@ GameObject:
   - component: {fileID: 766290347}
   - component: {fileID: 766290346}
   m_Layer: 0
-  m_Name: WP6_Enemigos
+  m_Name: WP3_Enemigos
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1675,37 +1658,21 @@ MonoBehaviour:
   - {fileID: 8814156245261537837, guid: f33b7e89ef814cc47bc73fb4b8be5903, type: 3}
   - {fileID: 8814156245261537837, guid: f33b7e89ef814cc47bc73fb4b8be5903, type: 3}
   enemyCount: 5
-  waitForRailArrival: 1
-  spawnOnlyOnce: 1
-  destinationMode: 0
   destinationPoint: {fileID: 0}
-  minCombatDistance: 6
-  maxCombatDistance: 14
-  combatHalfAngle: 35
-  combatSeparation: 1.8
-  playerEyeHeight: 1.6
-  enemyEyeHeight: 1.5
-  lineOfSightMask:
-    serializedVersion: 2
-    m_Bits: 0
-  combatSampleRadius: 1
   wallMask:
     serializedVersion: 2
     m_Bits: 0
-  wallRayHeight: 1
   maxWallDistance: 40
   maxWallThickness: 4
   defaultWallThickness: 0.5
   spawnClearance: 1
   spreadAngle: 50
   fallbackDistance: 14
-  requireHiddenSpawn: 1
   centerPoint: {fileID: 1835288539}
   centerDistance: 3
   ringRadius: 3.77
   arcDegrees: 100
   gatherRadius: 3
-  autoGroundFeet: 1
   spawnHeightOffset: 0.1
   groundMask:
     serializedVersion: 2
@@ -2197,7 +2164,7 @@ Transform:
   m_GameObject: {fileID: 880120206}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -3.006, y: 12.93, z: -33}
+  m_LocalPosition: {x: -3.006, y: 13.63, z: -33}
   m_LocalScale: {x: 7.6881266, y: 7, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2453,11 +2420,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6399520775157678443, guid: 9f78aa364ca5ccd48ad7024be3f57c15, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 11.08
+      value: 11.87
       objectReference: {fileID: 0}
     - target: {fileID: 6399520775157678443, guid: 9f78aa364ca5ccd48ad7024be3f57c15, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -9.15
+      value: -12.78
       objectReference: {fileID: 0}
     - target: {fileID: 6399520775157678443, guid: 9f78aa364ca5ccd48ad7024be3f57c15, type: 3}
       propertyPath: m_LocalRotation.w
@@ -2693,7 +2660,7 @@ GameObject:
   - component: {fileID: 1084909152}
   - component: {fileID: 1084909153}
   m_Layer: 0
-  m_Name: WP4_Curacion
+  m_Name: WP1_Curacion
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2727,8 +2694,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RailStop
   leaveCondition: 1
-  enemiesToKill: 1
-  autoAdvanceDelay: 0
+  enemiesToKill: 3
+  autoAdvanceDelay: 2
   overrideSpeed: 0
   moveSpeed: 5
   spawnDelay: 0
@@ -3860,14 +3827,6 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 2069826926767119433, guid: 1016b24c23c14054f94d0e35407302ac, type: 3}
-      propertyPath: shootClip
-      value: 
-      objectReference: {fileID: 8300000, guid: a4cd7f906e7f8ce468a39268bbd81bb9, type: 3}
-    - target: {fileID: 2069826926767119433, guid: 1016b24c23c14054f94d0e35407302ac, type: 3}
-      propertyPath: reloadClip
-      value: 
-      objectReference: {fileID: 8300000, guid: 56d230face4141e4dadd394b36ee00fd, type: 3}
-    - target: {fileID: 2069826926767119433, guid: 1016b24c23c14054f94d0e35407302ac, type: 3}
       propertyPath: playerCamera
       value: 
       objectReference: {fileID: 1833697641}
@@ -4129,7 +4088,7 @@ Transform:
   m_GameObject: {fileID: 1572941618}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3.8, y: 13.09, z: -27.92}
+  m_LocalPosition: {x: 3.9354, y: 13.99, z: -27.92}
   m_LocalScale: {x: 8.789023, y: 7, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4162,7 +4121,7 @@ Transform:
   m_GameObject: {fileID: 1699217867}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.44, y: 11.67, z: -40.7}
+  m_LocalPosition: {x: 0.44, y: 10.7, z: -40.7}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -4208,38 +4167,22 @@ MonoBehaviour:
   enemyPrefabs:
   - {fileID: 8814156245261537837, guid: f33b7e89ef814cc47bc73fb4b8be5903, type: 3}
   enemyCount: 1
-  waitForRailArrival: 1
-  spawnOnlyOnce: 1
-  destinationMode: 0
   destinationPoint: {fileID: 1784208961}
-  minCombatDistance: 6
-  maxCombatDistance: 14
-  combatHalfAngle: 35
-  combatSeparation: 1.8
-  playerEyeHeight: 1.6
-  enemyEyeHeight: 1.5
-  lineOfSightMask:
-    serializedVersion: 2
-    m_Bits: 512
-  combatSampleRadius: 1
   wallMask:
     serializedVersion: 2
     m_Bits: 512
-  wallRayHeight: 1
   maxWallDistance: -35
   maxWallThickness: 6
   defaultWallThickness: 4
   spawnClearance: 100
   spreadAngle: 55
   fallbackDistance: 12
-  requireHiddenSpawn: 1
   centerPoint: {fileID: 0}
   centerDistance: 10
   ringRadius: 6
   arcDegrees: 240
   gatherRadius: 4
-  autoGroundFeet: 0
-  spawnHeightOffset: 0.29
+  spawnHeightOffset: 0.1
   groundMask:
     serializedVersion: 2
     m_Bits: 256
@@ -4535,7 +4478,7 @@ GameObject:
   - component: {fileID: 1811502195}
   - component: {fileID: 1811502196}
   m_Layer: 0
-  m_Name: WP5_Granada
+  m_Name: WP2_Granada
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

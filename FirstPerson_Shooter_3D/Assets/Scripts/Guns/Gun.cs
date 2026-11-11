@@ -1,20 +1,10 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.SceneManagement;
 
 public class Gun : MonoBehaviour
 {
     public enum BarrelAxis { Forward, Back, Right, Left, Up, Down }
-
-    [Header("Datos del arma (opcional)")]
-    [Tooltip("Si se asigna, el tipo de disparo, la cadencia, el daño, el alcance, la munición y la recarga salen de este asset " +
-             "y se ignoran los valores sueltos de abajo. Si se deja vacío, el arma funciona como antes.")]
-    [SerializeField] private WeaponData data;
-
-    [Header("Tutorial")]
-    [Tooltip("Nombre de la escena del tutorial. SOLO en esa escena se aplican el bloqueo de disparo y los avisos del tutorial.")]
-    [SerializeField] private string tutorialSceneName = "Tutorial";
 
     [Header("Referencias")]
     [SerializeField] private Camera playerCamera;           // Si está vacía, la rellena PickUpController o usa Camera.main
@@ -24,7 +14,7 @@ public class Gun : MonoBehaviour
     [SerializeField] private bool reloadWithRightClick = true;
     [SerializeField] private Key reloadKey = Key.R;
 
-    [Header("Disparo (hitscan) - valores sueltos, solo se usan si NO hay WeaponData")]
+    [Header("Disparo (hitscan)")]
     [SerializeField] private float damage = 25f;
     [SerializeField] private float fireRate = 1.5f;         // Disparos por segundo
     [SerializeField] private bool automatic = false;        // Mantener pulsado para disparar
@@ -42,7 +32,7 @@ public class Gun : MonoBehaviour
     [Tooltip("Giro sobre el propio cañón. Pon 180 si el arma se ve boca abajo.")]
     [SerializeField] private float rollDegrees = 0f;
 
-    [Header("Munición - valores sueltos, solo se usan si NO hay WeaponData")]
+    [Header("Munición (se muestra con AmmoIconsUI)")]
     [SerializeField] private int magazineSize = 6;
     [SerializeField] private int reserveAmmo = 24;
     [SerializeField] private float reloadTime = 2f;
@@ -50,7 +40,6 @@ public class Gun : MonoBehaviour
     [Header("Efectos")]
     [SerializeField] private ParticleSystem muzzleFlash;
     [SerializeField] private GameObject impactEffectPrefab;
-    [Tooltip("Si 'Shoot Clip' / 'Reload Clip' están asignados se usan ellos; si no, suenan los ids del WeaponData a través del AudioManager.")]
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip shootClip;
     [SerializeField] private AudioClip reloadClip;
@@ -63,29 +52,18 @@ public class Gun : MonoBehaviour
     private bool isReloading;
     private float reloadStartTime;
     private bool warnedNoCamera;
-    private bool inTutorial;
     private Transform owner;                                // El jugador (lo asigna PickUpController)
-    private WeaponFireControl fire;                         // Solo existe si hay WeaponData
 
     private readonly RaycastHit[] hits = new RaycastHit[16];
 
-    // Valores efectivos: del WeaponData si existe, si no los sueltos
-    private float Damage => data != null ? data.damage : damage;
-    private float Range => data != null ? data.range : aimDistance;
-    private float ReloadTime => data != null ? data.reloadTime : reloadTime;
-
-    // Datos que lee el HUD de munición y el inventario
+    // Datos que lee el HUD de munición
     public int AmmoInMag => ammoInMag;
     public int ReserveAmmo => reserveAmmo;
-    public int MagazineSize => data != null ? data.magazineSize : magazineSize;
+    public int MagazineSize => magazineSize;
     public bool IsReloading => isReloading;
     public float ReloadProgress => isReloading
-        ? Mathf.Clamp01((Time.time - reloadStartTime) / Mathf.Max(0.01f, ReloadTime))
+        ? Mathf.Clamp01((Time.time - reloadStartTime) / Mathf.Max(0.01f, reloadTime))
         : 0f;
-
-    public WeaponData Data => data;
-    public Sprite Icon => data != null ? data.icon : null;
-    public string DisplayName => data != null ? data.displayName : name;
 
     private Camera Cam
     {
@@ -98,22 +76,7 @@ public class Gun : MonoBehaviour
 
     private void Awake()
     {
-        inTutorial = !string.IsNullOrEmpty(tutorialSceneName)
-                  && SceneManager.GetActiveScene().name == tutorialSceneName;
-
-        ammoInMag = MagazineSize;
-
-        if (data != null)
-        {
-            reserveAmmo = data.startReserveAmmo;
-
-            fire = GetComponent<WeaponFireControl>();
-            if (fire == null) fire = gameObject.AddComponent<WeaponFireControl>();
-
-            fire.data = data;
-            fire.ShootCallback = ShootOnce;
-            fire.enabled = enabled;
-        }
+        ammoInMag = magazineSize;
     }
 
     // Lo llama PickUpController en Start
@@ -128,18 +91,8 @@ public class Gun : MonoBehaviour
         Mouse mouse = Mouse.current;
         if (mouse != null)
         {
-            if (fire != null)
-            {
-                // Con WeaponData: el WeaponFireControl decide cuándo sale cada disparo
-                if (mouse.leftButton.wasPressedThisFrame) fire.PressTrigger();
-                if (mouse.leftButton.wasReleasedThisFrame) fire.ReleaseTrigger();
-            }
-            else
-            {
-                // Sin WeaponData: comportamiento de siempre
-                bool shoot = automatic ? mouse.leftButton.isPressed : mouse.leftButton.wasPressedThisFrame;
-                if (shoot) TryShootLegacy();
-            }
+            bool fire = automatic ? mouse.leftButton.isPressed : mouse.leftButton.wasPressedThisFrame;
+            if (fire) TryShoot();
 
             if (reloadWithRightClick && mouse.rightButton.wasPressedThisFrame) Reload();
         }
@@ -156,21 +109,12 @@ public class Gun : MonoBehaviour
     }
 
     // ---------- DISPARO ----------
-    private void TryShootLegacy()
+    // ---------- DISPARO ----------
+    private void TryShoot()
     {
-        if (Time.time < nextFireTime) return;
-        if (ShootOnce()) nextFireTime = Time.time + 1f / Mathf.Max(0.05f, fireRate);
-    }
+        if (!TutorialGate.CanShoot) return;   // NUEVO: bloqueado hasta que el tutorial lo permita
 
-    /// <summary>
-    /// Un disparo completo (puede ser varios proyectiles). Devuelve false si no se pudo disparar.
-    /// Lo llama WeaponFireControl (con WeaponData) o TryShootLegacy (sin WeaponData).
-    /// </summary>
-    private bool ShootOnce()
-    {
-        if (inTutorial && !TutorialGate.CanShoot) return false;   // bloqueado hasta que el tutorial lo permita
-
-        if (isReloading) return false;
+        if (isReloading || Time.time < nextFireTime) return;
 
         if (Cam == null)
         {
@@ -179,36 +123,29 @@ public class Gun : MonoBehaviour
                 warnedNoCamera = true;
                 Debug.LogError($"[Gun] {name}: no hay cámara. Asigna 'Player Camera' o etiqueta tu cámara como MainCamera.", this);
             }
-            return false;
+            return;
         }
 
         if (ammoInMag <= 0)
         {
-            if (reserveAmmo > 0) Reload();
-            else if (data != null) PlaySound(null, data.emptySfx);   // clic de arma vacía
-            return false;
+            Reload();
+            return;
         }
 
+        nextFireTime = Time.time + 1f / fireRate;
         Shoot();
-        return true;
     }
 
     private void Shoot()
     {
         ammoInMag--;
-        if (inTutorial) TutorialEvents.NotifyWeaponFired();
+        TutorialEvents.NotifyWeaponFired();   // NUEVO
 
-        int pellets = data != null ? Mathf.Max(1, data.pellets) : 1;
-        HealthPickup lastPickup = null;   // evita curar varias veces con un mismo disparo de escopeta
+        Ray ray = GetShotRay();
 
-        for (int i = 0; i < pellets; i++)
+        if (RaycastIgnoringSelf(ray, out RaycastHit hit))
         {
-            Ray ray = GetShotRay();
-
-            if (!RaycastIgnoringSelf(ray, out RaycastHit hit)) continue;
-
-            if (debugLog && i == 0)
-                Debug.Log($"[Gun] Disparo -> impacto en '{hit.collider.name}' a {hit.distance:F1} m", this);
+            if (debugLog) Debug.Log($"[Gun] Disparo -> impacto en '{hit.collider.name}' a {hit.distance:F1} m", this);
 
             if (impactEffectPrefab != null)
             {
@@ -219,30 +156,21 @@ public class Gun : MonoBehaviour
 
             // Daño a enemigos (también si el collider está en un hijo del enemigo)
             EnemyHealth enemy = hit.collider.GetComponentInParent<EnemyHealth>();
-            if (enemy != null) enemy.TakeDamage(Damage);
+            if (enemy != null) enemy.TakeDamage(damage);
 
             // Curación
             HealthPickup pickup = hit.collider.GetComponentInParent<HealthPickup>();
-            if (pickup != null && pickup != lastPickup)
+            if (pickup != null)
             {
-                lastPickup = pickup;
                 pickup.OnShot();
-                if (inTutorial) TutorialEvents.NotifyHealPickupShot();
+                TutorialEvents.NotifyHealPickupShot();   // NUEVO
             }
         }
 
         if (muzzleFlash) muzzleFlash.Play();
-        PlaySound(shootClip, data != null ? data.shootSfx : null);
+        if (audioSource && shootClip) audioSource.PlayOneShot(shootClip);
     }
 
-    // Prioridad: clip suelto asignado en el arma; si no, el id del WeaponData en el AudioManager
-    private void PlaySound(AudioClip clip, string sfxId)
-    {
-        if (audioSource != null && clip != null)
-            audioSource.PlayOneShot(clip);
-        else if (data != null && !string.IsNullOrEmpty(sfxId))
-            AudioManager.Sfx(sfxId);
-    }
 
     private Vector2 GetScreenPoint()
     {
@@ -258,24 +186,18 @@ public class Gun : MonoBehaviour
         return Cam.ScreenPointToRay(GetScreenPoint());
     }
 
-    // Rayo de UN proyectil: el del puntero más la dispersión
+    // Rayo del disparo: el del puntero más la dispersión opcional
     private Ray GetShotRay()
     {
         Ray ray = GetCursorRay();
 
-        if (data != null)
-        {
-            // Dispersión en cono (grados) definida en el WeaponData
-            if (fire != null) ray.direction = fire.GetShotDirection(ray.direction);
-        }
-        else if (spread > 0f)
+        if (spread > 0f)
         {
             Vector3 dir = ray.direction
                         + Cam.transform.right * Random.Range(-spread, spread)
                         + Cam.transform.up * Random.Range(-spread, spread);
             ray.direction = dir.normalized;
         }
-
         return ray;
     }
 
@@ -298,7 +220,7 @@ public class Gun : MonoBehaviour
     // Impacto más cercano que no sea ignorado
     private bool RaycastIgnoringSelf(Ray ray, out RaycastHit result)
     {
-        int count = Physics.RaycastNonAlloc(ray, hits, Range, aimMask, QueryTriggerInteraction.Collide);
+        int count = Physics.RaycastNonAlloc(ray, hits, aimDistance, aimMask, QueryTriggerInteraction.Collide);
         float closest = float.MaxValue;
         bool found = false;
         result = default;
@@ -327,7 +249,7 @@ public class Gun : MonoBehaviour
         Ray ray = GetCursorRay();
         Vector3 target = RaycastIgnoringSelf(ray, out RaycastHit hit)
             ? hit.point
-            : ray.GetPoint(Range);
+            : ray.GetPoint(aimDistance);
 
         Vector3 dir = target - transform.position;
         if (dir.sqrMagnitude < 0.0001f) return;
@@ -365,7 +287,7 @@ public class Gun : MonoBehaviour
     // ---------- RECARGA ----------
     public void Reload()
     {
-        if (isReloading || ammoInMag == MagazineSize || reserveAmmo <= 0) return;
+        if (isReloading || ammoInMag == magazineSize || reserveAmmo <= 0) return;
 
         // Evita el error "Coroutine couldn't be started because the game object is inactive"
         if (!isActiveAndEnabled) return;
@@ -377,29 +299,21 @@ public class Gun : MonoBehaviour
     {
         isReloading = true;
         reloadStartTime = Time.time;
-        PlaySound(reloadClip, data != null ? data.reloadSfx : null);
+        if (audioSource && reloadClip) audioSource.PlayOneShot(reloadClip);
 
-        yield return new WaitForSeconds(ReloadTime);
+        yield return new WaitForSeconds(reloadTime);
 
-        int taken = Mathf.Min(MagazineSize - ammoInMag, reserveAmmo);
+        int taken = Mathf.Min(magazineSize - ammoInMag, reserveAmmo);
         ammoInMag += taken;
         reserveAmmo -= taken;
         isReloading = false;
     }
 
-    private void OnEnable()
-    {
-        if (fire != null) fire.enabled = true;
-    }
-
     // Si se suelta el arma a mitad de recarga, se cancela de verdad
-    // (desactivar solo el componente NO detiene las corrutinas, por eso StopAllCoroutines).
-    // El control de disparo también se apaga para que no salga ningún disparo suelto.
+    // (desactivar solo el componente NO detiene las corrutinas, por eso StopAllCoroutines)
     private void OnDisable()
     {
         StopAllCoroutines();
         isReloading = false;
-
-        if (fire != null) fire.enabled = false;
     }
 }
