@@ -1,35 +1,50 @@
+using System;
 using UnityEngine;
 
 /// <summary>
-/// Director del tutorial sobre raíles. Va llevando al jugador por los waypoints del RailManager
-/// según lo que haga, y decide qué aviso se ve y qué controles están desbloqueados:
-///  Inicio       -> sin arma, el jugador no avanza. Apunta al arma: PickUpController avisa de [E].
-///  Coger arma   -> avanza al waypoint 0. Al llegar se desbloquea el disparo ("Clic izquierdo").
-///  Disparo      -> aparecen 2 enemigos en el waypoint 0; al matarlos avanza al waypoint 1
-///                  (pickup de curación: "Dispara a este objeto para curarte").
-///  Curación     -> avanza al waypoint 2 (granada: "Pulsa [E] para coger la granada").
-///  Coger granada-> avanza al waypoint 3 (ZoneSpawner crea 5 enemigos que hay que matar con la granada;
-///                  el arma se bloquea hasta gastar las granadas; se muestran los controles
-///                  de la granada y se desbloquea el lanzamiento).
-///  Matar a todos-> fin de la ruta -> cartel de tutorial completado -> siguiente nivel.
+/// Director del tutorial sobre raíles. Cada elemento de "Steps" describe el waypoint
+/// con el mismo índice en la lista Waypoints del RailManager.
 /// </summary>
 public class TutorialManager : MonoBehaviour
 {
+    public enum StepType
+    {
+        Pass, // solo de paso sigue al siguiente punto
+        Shoot,         // se avanza al hacer un disparo
+        ShootEnemies,  // aparecen enemigos (ZoneSpawner); el RailManager avanza al matarlos
+        Heal,          // hay que disparar al botiquín (arrástralo en Target)
+        Grenade,       // hay que coger la granada con [E]
+        Finale         // combate final con granadas; al limpiar la zona termina el tutorial
+    }
+
+    [Serializable]
+    public class Step
+    {
+        public string name;
+        public StepType type;
+        [Tooltip("Solo para Heal: el botiquín de esta parada")]
+        public GameObject target;
+        [Tooltip("OPCIONAL. Aviso propio de esta parada (si está vacío, se usa el de por defecto)")]
+        [TextArea] public string message;
+        [NonSerialized] public bool hadTarget;
+    }
+
     [Header("Referencias")]
     [SerializeField] private TutorialCompletePanel completePanel;
-    [Tooltip("OPCIONAL. Enemigos colocados a mano (se activan al llegar al último waypoint). " +
+    [Tooltip("OPCIONAL. Enemigos colocados a mano (se activan al llegar al paso Finale). " +
              "Si usas ZoneSpawner, déjalo vacío.")]
     [SerializeField] private GameObject[] tutorialEnemies;
 
+    [Header("Pasos (el elemento N = waypoint N del RailManager)")]
+    [SerializeField] private Step[] steps;
+
     [Header("Opciones")]
-    [Tooltip("Marcado: en el waypoint 0 aparecen enemigos (ZoneSpawner) y la parada se supera MATÁNDOLOS " +
-             "(RailStop = Kill Enemies). Desmarcado: se avanza al hacer el primer disparo.")]
-    [SerializeField] private bool shootStopHasEnemies = true;
-    [Tooltip("Marcado: en el último combate el arma queda bloqueada para obligar a usar la granada. " +
-             "Si se gastan todas las granadas y quedan enemigos, el disparo se vuelve a permitir (evita atascos).")]
     [SerializeField] private bool grenadeOnlyFinale = true;
 
-    [Header("Mensajes (admite rich text de TextMeshPro)")]
+    [Header("Depuración")]
+    [SerializeField] private bool debugLog = true;
+
+    [Header("Mensajes por defecto")]
     [TextArea][SerializeField] private string shootMsg = "<b><color=#FFD54F>CLIC IZQUIERDO</color></b> para disparar";
     [TextArea][SerializeField] private string healPickupMsg = "Dispara a este objeto para <b><color=#5CFF7A>curarte</color></b>";
     [TextArea][SerializeField] private string grenadePickupMsg = "Pulsa <b><color=#FFD54F>[E]</color></b> para coger la granada";
@@ -38,20 +53,16 @@ public class TutorialManager : MonoBehaviour
     private string grenadeControlsMsg =
         "Mantén <b><color=#FFD54F>[G]</color></b> para apuntar  ·  Suelta <b><color=#FFD54F>[G]</color></b> para lanzar\n" +
         "<b><color=#FFD54F>[X]</color></b> para cancelar el lanzamiento";
-
     [TextArea]
     [SerializeField]
     private string fallbackMsg =
         "¡Sin granadas! Remata a los enemigos con <b><color=#FFD54F>CLIC IZQUIERDO</color></b>";
 
-    // Etapas: 0 espera arma | 1 en waypoint 0 (disparo) | 2 en waypoint 1 (curación)
-    //         3 en waypoint 2 (granada) | 4 en waypoint 3 (enemigos)
-    private int stage;
-
-    private bool weaponTaken, shootReady, hasShot, healShot;
+    private bool weaponTaken, shootUnlocked, shotHere, healDone;
     private bool grenadeTaken, enemiesStarted, grenadeThrown, completed;
     private int lastGrenadeCount;
-    private string shownMsg; // último mensaje que ha mostrado el tutorial
+    private string shownMsg;
+    private string lastStateLog;
     private RailManager rail;
 
     private void Awake()
@@ -61,6 +72,10 @@ public class TutorialManager : MonoBehaviour
         foreach (GameObject e in tutorialEnemies)
             if (e != null) e.SetActive(false);
 
+        if (steps != null)
+            foreach (Step s in steps)
+                s.hadTarget = s.target != null;
+
         RefreshGates();
     }
 
@@ -68,12 +83,18 @@ public class TutorialManager : MonoBehaviour
     {
         rail = RailManager.Instance;
         if (rail == null)
-            Debug.LogError("[TutorialManager] No hay RailManager en la escena.", this);
-        else
         {
-            rail.OnPathFinished += OnPathFinished;
-            rail.OnStartedMoving += OnRailStartedMoving;
+            Debug.LogError("[TutorialManager] No hay RailManager en la escena.", this);
+            return;
         }
+
+        rail.OnPathFinished += OnPathFinished;
+        rail.OnStartedMoving += OnRailStartedMoving;
+        rail.OnArrived += OnRailArrived;
+
+        if (steps == null || steps.Length != rail.waypoints.Length)
+            Debug.LogWarning($"[TutorialManager] Hay {(steps == null ? 0 : steps.Length)} pasos y " +
+                             $"{rail.waypoints.Length} waypoints. Deben coincidir.", this);
     }
 
     private void OnEnable()
@@ -100,15 +121,55 @@ public class TutorialManager : MonoBehaviour
         {
             rail.OnPathFinished -= OnPathFinished;
             rail.OnStartedMoving -= OnRailStartedMoving;
+            rail.OnArrived -= OnRailArrived;
         }
-        TutorialGate.ResetAll(); // al salir del tutorial todo vuelve a estar permitido
+        TutorialGate.ResetAll();
+    }
+
+    // ───────── Utilidades ─────────
+    private Step CurrentStep
+    {
+        get
+        {
+            if (rail == null || steps == null) return null;
+            int i = rail.CurrentStopIndex;
+            return (i >= 0 && i < steps.Length) ? steps[i] : null;
+        }
+    }
+
+    /// <summary>True si el vagón está parado en una parada de ese tipo.</summary>
+    private bool AtStep(StepType type)
+    {
+        if (rail == null || rail.IsMoving) return false;
+        Step s = CurrentStep;
+        return s != null && s.type == type;
     }
 
     // ───────── Eventos ─────────
-    private void OnWeaponPickedUp() { weaponTaken = true; RefreshGates(); }
-    private void OnWeaponFired() { if (TutorialGate.CanShoot) hasShot = true; }
-    private void OnHealPickupShot() { if (TutorialGate.CanShoot) healShot = true; }
-    private void OnGrenadePickedUp() { grenadeTaken = true; }
+    private void OnWeaponPickedUp()
+    {
+        weaponTaken = true;
+        if (debugLog) Debug.Log("[Tutorial] Arma recogida.", this);
+        RefreshGates();
+    }
+
+    private void OnWeaponFired()
+    {
+        if (TutorialGate.CanShoot && AtStep(StepType.Shoot)) shotHere = true;
+        if (TutorialGate.CanShoot && AtStep(StepType.ShootEnemies)) shotHere = true;
+    }
+
+    // Opcional: si algún script lo lanza, también cuenta
+    private void OnHealPickupShot()
+    {
+        if (TutorialGate.CanShoot && AtStep(StepType.Heal)) healDone = true;
+    }
+
+    private void OnGrenadePickedUp()
+    {
+        grenadeTaken = true;
+        if (debugLog) Debug.Log("[Tutorial] Granada recogida.", this);
+    }
 
     private void OnGrenadeCountChanged(int count)
     {
@@ -117,25 +178,32 @@ public class TutorialManager : MonoBehaviour
         RefreshGates();
     }
 
-    // La etapa sigue siempre al RailManager: ir al waypoint N = etapa N+1.
-    // Así funciona también cuando el propio rail avanza por matar enemigos.
     private void OnRailStartedMoving(int waypointIndex)
     {
-        stage = waypointIndex + 1;
+        shownMsg = null;
+        if (debugLog) Debug.Log($"[Tutorial] El rail se mueve al waypoint {waypointIndex}.", this);
+    }
+
+    private void OnRailArrived(int waypointIndex)
+    {
+        shownMsg = null;
+        shotHere = false;
+        healDone = false;
+        if (debugLog) Debug.Log($"[Tutorial] Llegada al waypoint {waypointIndex}.", this);
     }
 
     private void OnPathFinished()
     {
-        if (enemiesStarted) Complete(); // última zona limpia = tutorial completado
+        if (debugLog) Debug.Log($"[Tutorial] Ruta terminada (enemiesStarted = {enemiesStarted}).", this);
+        if (enemiesStarted) Complete();
     }
 
-    // Granadas gastadas con enemigos vivos: se permite disparar para no quedarse atascado
-    private bool FallbackShooting => grenadeThrown && !GrenadeInventory.HasGrenade;
+    private bool FallbackShooting => enemiesStarted && !GrenadeInventory.HasGrenade;
 
     private void RefreshGates()
     {
         bool grenadeOnly = grenadeOnlyFinale && enemiesStarted && !FallbackShooting;
-        TutorialGate.CanShoot = weaponTaken && shootReady && !grenadeOnly;
+        TutorialGate.CanShoot = weaponTaken && shootUnlocked && !grenadeOnly;
         TutorialGate.CanThrowGrenade = enemiesStarted;
     }
 
@@ -146,36 +214,72 @@ public class TutorialManager : MonoBehaviour
 
         UpdateProgress();
         UpdateHint();
+        LogState();
 
         if (enemiesStarted && AllManualEnemiesDead()) Complete();
     }
 
-    /// <summary>Mueve al jugador por los waypoints según lo que haya hecho.</summary>
+    private void LogState()
+    {
+        if (!debugLog) return;
+
+        Step s = CurrentStep;
+        string state = $"parada {(rail != null ? rail.CurrentStopIndex : -99)} " +
+                       $"({(s != null ? s.type.ToString() : "-")}) | " +
+                       $"moviéndose: {(rail != null && rail.IsMoving)} | CanShoot: {TutorialGate.CanShoot} | " +
+                       $"arma: {weaponTaken} | disparo: {shotHere} | granada: {grenadeTaken} | " +
+                       $"enemiesStarted: {enemiesStarted} | tiene granadas: {GrenadeInventory.HasGrenade}";
+
+        if (state == lastStateLog) return;
+        lastStateLog = state;
+        Debug.Log("[Tutorial] " + state, this);
+    }
+
     private void UpdateProgress()
     {
-        if (rail == null || rail.IsMoving) return; // solo se decide cuando está parado
+        if (rail == null || rail.IsMoving) return;
 
-        switch (stage)
+        // Aún en el punto de inicio: esperando el arma
+        if (rail.CurrentStopIndex < 0)
         {
-            case 0:
-                if (weaponTaken) Advance();            // -> waypoint 0
+            if (weaponTaken) Advance();
+            return;
+        }
+
+        Step s = CurrentStep;
+        if (s == null) return;
+
+        // Desde la primera parada de disparo en adelante el arma queda desbloqueada
+        if (!shootUnlocked && s.type != StepType.Finale)
+        {
+            shootUnlocked = true;
+            RefreshGates();
+        }
+
+        switch (s.type)
+        {
+            case StepType.Pass:
+                Advance();
                 break;
 
-            case 1:                                    // parado en el waypoint 0
-                if (!shootReady) { shootReady = true; RefreshGates(); }
-                if (hasShot && !shootStopHasEnemies) Advance(); // -> waypoint 1
-                // con enemigos: el RailManager avanza solo al matarlos (RailStop = Kill Enemies)
+            case StepType.Shoot:
+                if (shotHere) Advance();
                 break;
 
-            case 2:                                    // parado en el waypoint 1 (curación)
-                if (healShot) Advance();               // -> waypoint 2
+            case StepType.ShootEnemies:
+                // El RailManager avanza solo al matar a los enemigos
                 break;
 
-            case 3:                                    // parado en el waypoint 2 (granada)
-                if (grenadeTaken) Advance();           // -> waypoint 3
+            case StepType.Heal:
+                // El botiquín se destruye al dispararlo: eso cuenta como curación
+                if (healDone || (s.hadTarget && s.target == null)) Advance();
                 break;
 
-            case 4:                                    // parado en el waypoint 3 (enemigos)
+            case StepType.Grenade:
+                if (grenadeTaken || GrenadeInventory.HasGrenade) Advance();
+                break;
+
+            case StepType.Finale:
                 if (!enemiesStarted)
                 {
                     enemiesStarted = true;
@@ -189,29 +293,28 @@ public class TutorialManager : MonoBehaviour
 
     private void Advance()
     {
-        rail.GoToNextWaypoint(); // la etapa la actualiza OnRailStartedMoving
+        if (debugLog) Debug.Log($"[Tutorial] Avanzando desde la parada {rail.CurrentStopIndex}.", this);
+        rail.GoToNextWaypoint();
     }
 
     // ───────── Avisos ─────────
     private void UpdateHint()
     {
-        // Mientras apuntas la granada, el aviso lo gestiona el propio GrenadeThrower
         if (GrenadeThrower.IsAiming)
         {
             shownMsg = null;
             return;
         }
 
-        string msg = GetAimMessage() ?? GetPersistentMessage();
-        if (msg == shownMsg) return; // evita relanzar la corrutina del fundido cada frame
+        string msg = (rail != null && rail.IsMoving) ? null : (GetAimMessage() ?? GetPersistentMessage());
+        if (msg == shownMsg) return;
         shownMsg = msg;
 
         if (ControlsHintUI.Instance == null) return;
-        if (msg != null) ControlsHintUI.Instance.Show(msg, 0f, true); // 0 = se queda hasta Hide()
+        if (msg != null) ControlsHintUI.Instance.Show(msg, 0f, true);
         else ControlsHintUI.Instance.Hide();
     }
 
-    /// <summary>Avisos que salen solo mientras el puntero apunta al objeto.</summary>
     private string GetAimMessage()
     {
         if (!AimRaycaster.Cast(out RaycastHit hit)) return null;
@@ -219,24 +322,41 @@ public class TutorialManager : MonoBehaviour
         TutorialTarget target = hit.collider.GetComponentInParent<TutorialTarget>();
         if (target == null || hit.distance > target.maxAimDistance) return null;
 
+        Step s = CurrentStep;
+
         switch (target.type)
         {
             case TutorialTargetType.Weapon:
-                return null; // el aviso de recoger el arma ya lo muestra PickUpController
+                return null; // lo muestra PickUpController
             case TutorialTargetType.HealPickup:
-                return TutorialGate.CanShoot ? healPickupMsg : null;
+                return (TutorialGate.CanShoot && AtStep(StepType.Heal))
+                    ? (string.IsNullOrEmpty(s.message) ? healPickupMsg : s.message) : null;
             case TutorialTargetType.Grenade:
-                return grenadeTaken ? null : grenadePickupMsg;
+                return (!grenadeTaken && AtStep(StepType.Grenade))
+                    ? (string.IsNullOrEmpty(s.message) ? grenadePickupMsg : s.message) : null;
         }
         return null;
     }
 
-    /// <summary>Avisos que se mantienen hasta que haces la acción.</summary>
     private string GetPersistentMessage()
     {
-        if (TutorialGate.CanShoot && !hasShot) return shootMsg;
-        if (enemiesStarted && !grenadeThrown && GrenadeInventory.HasGrenade) return grenadeControlsMsg;
-        if (enemiesStarted && grenadeOnlyFinale && FallbackShooting) return fallbackMsg;
+        Step s = CurrentStep;
+        if (s == null || rail == null || rail.IsMoving) return null;
+
+        switch (s.type)
+        {
+            case StepType.Shoot:
+            case StepType.ShootEnemies:
+                if (TutorialGate.CanShoot && !shotHere)
+                    return string.IsNullOrEmpty(s.message) ? shootMsg : s.message;
+                return null;
+
+            case StepType.Finale:
+                if (!enemiesStarted) return null;
+                if (!grenadeThrown && GrenadeInventory.HasGrenade) return grenadeControlsMsg;
+                if (grenadeOnlyFinale && FallbackShooting) return fallbackMsg;
+                return null;
+        }
         return null;
     }
 

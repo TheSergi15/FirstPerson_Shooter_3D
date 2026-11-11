@@ -16,16 +16,12 @@ public class HealthPickup : MonoBehaviour
 
     public void OnShot()
     {
-        // Curar al jugador.
         if (PlayerHealth.Instance != null)
-        {
             PlayerHealth.Instance.Heal(healAmount);
-        }
 
-        // Crear el efecto visual.
+        
+
         SpawnCollectEffect();
-
-        // Destruir el botiquín.
         Destroy(gameObject);
     }
 

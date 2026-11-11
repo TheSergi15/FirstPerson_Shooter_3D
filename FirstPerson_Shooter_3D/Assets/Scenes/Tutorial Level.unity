@@ -254,8 +254,8 @@ MonoBehaviour:
   - {fileID: 424294566}
   - {fileID: 596961601}
   - {fileID: 1084909152}
-  - {fileID: 1811502195}
   - {fileID: 766290345}
+  - {fileID: 1811502195}
   moveSpeed: 5
   easeCurve:
     serializedVersion: 2
@@ -1380,8 +1380,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 596961601}
-  - component: {fileID: 596961603}
   - component: {fileID: 596961602}
+  - component: {fileID: 596961603}
   m_Layer: 0
   m_Name: WP3_DisparoPart2
   m_TagString: Untagged
@@ -1458,7 +1458,7 @@ MonoBehaviour:
   centerDistance: 10
   ringRadius: 6
   arcDegrees: 240
-  gatherRadius: 1.5
+  gatherRadius: 4
   spawnHeightOffset: 0.1
   groundMask:
     serializedVersion: 2
@@ -1593,7 +1593,7 @@ GameObject:
   - component: {fileID: 766290347}
   - component: {fileID: 766290346}
   m_Layer: 0
-  m_Name: WP3_Enemigos
+  m_Name: WP6_Enemigos
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2424,7 +2424,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6399520775157678443, guid: 9f78aa364ca5ccd48ad7024be3f57c15, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -12.78
+      value: -6.06
       objectReference: {fileID: 0}
     - target: {fileID: 6399520775157678443, guid: 9f78aa364ca5ccd48ad7024be3f57c15, type: 3}
       propertyPath: m_LocalRotation.w
@@ -2660,7 +2660,7 @@ GameObject:
   - component: {fileID: 1084909152}
   - component: {fileID: 1084909153}
   m_Layer: 0
-  m_Name: WP1_Curacion
+  m_Name: WP4_Curacion
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3184,8 +3184,37 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TutorialManager
   completePanel: {fileID: 1037414813}
   tutorialEnemies: []
-  shootStopHasEnemies: 1
+  steps:
+  - name: WP0_Disparo
+    type: 2
+    target: {fileID: 1699217867}
+    message: 
+  - name: WP1_Move
+    type: 0
+    target: {fileID: 781914110}
+    message: 
+  - name: WP2_Moving
+    type: 0
+    target: {fileID: 424294565}
+    message: 
+  - name: WP3_DisparoPart2
+    type: 2
+    target: {fileID: 596961600}
+    message: 
+  - name: WP4_Curacion
+    type: 3
+    target: {fileID: 1084909151}
+    message: 
+  - name: WP5_Granada
+    type: 4
+    target: {fileID: 1811502194}
+    message: 
+  - name: WP6_Enemigos
+    type: 5
+    target: {fileID: 766290344}
+    message: 
   grenadeOnlyFinale: 1
+  debugLog: 1
   shootMsg: <b><color=#FFD54F>CLIC IZQUIERDO</color></b> para disparar
   healPickupMsg: Dispara a este objeto para <b><color=#5CFF7A>curarte</color></b>
   grenadePickupMsg: Pulsa <b><color=#FFD54F>[E]</color></b> para coger la granada
@@ -4461,7 +4490,7 @@ Transform:
   m_GameObject: {fileID: 1784208960}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3.96, y: 10.84, z: -32.63}
+  m_LocalPosition: {x: 3.96, y: 10.84, z: -31.61}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4478,7 +4507,7 @@ GameObject:
   - component: {fileID: 1811502195}
   - component: {fileID: 1811502196}
   m_Layer: 0
-  m_Name: WP2_Granada
+  m_Name: WP5_Granada
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5092,7 +5121,7 @@ Transform:
   m_GameObject: {fileID: 2034506243}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -3.34, y: 11.25, z: -25.1}
+  m_LocalPosition: {x: -3.4, y: 10.68, z: -19.26}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
