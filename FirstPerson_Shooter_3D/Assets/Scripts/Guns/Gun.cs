@@ -10,6 +10,14 @@ public class Gun : MonoBehaviour
     [SerializeField] private Camera playerCamera;           // Si está vacía, la rellena PickUpController o usa Camera.main
     [SerializeField] private LayerMask aimMask = ~0;        // Quita aquí la capa del jugador si tiene collider propio
 
+
+    [Header("Sonido de disparo (recorte)")]
+    [SerializeField] private bool trimShootClip = true;
+    [Tooltip("Segundo del clip desde el que empieza a sonar")]
+    [SerializeField] private float shootClipStart = 0f;
+    [Tooltip("Cuántos segundos suena desde ese punto")]
+    [SerializeField] private float shootClipLength = 0.3f;
+
     [Header("Controles (se leen directamente, ya no hace falta PlayerInput)")]
     [SerializeField] private bool reloadWithRightClick = true;
     [SerializeField] private Key reloadKey = Key.R;
@@ -168,7 +176,7 @@ public class Gun : MonoBehaviour
         }
 
         if (muzzleFlash) muzzleFlash.Play();
-        if (audioSource && shootClip) audioSource.PlayOneShot(shootClip);
+        PlayShootSound();
     }
 
 
@@ -308,6 +316,26 @@ public class Gun : MonoBehaviour
         reserveAmmo -= taken;
         isReloading = false;
     }
+    private void PlayShootSound()
+    {
+        if (audioSource == null || shootClip == null) return;
+
+        if (!trimShootClip)
+        {
+            audioSource.PlayOneShot(shootClip);
+            return;
+        }
+
+        audioSource.Stop();
+        audioSource.clip = shootClip;
+        audioSource.loop = false;
+        audioSource.time = Mathf.Clamp(shootClipStart, 0f, shootClip.length - 0.01f);
+
+        double now = AudioSettings.dspTime;
+        audioSource.PlayScheduled(now);
+        audioSource.SetScheduledEndTime(now + shootClipLength);
+    }
+
 
     // Si se suelta el arma a mitad de recarga, se cancela de verdad
     // (desactivar solo el componente NO detiene las corrutinas, por eso StopAllCoroutines)

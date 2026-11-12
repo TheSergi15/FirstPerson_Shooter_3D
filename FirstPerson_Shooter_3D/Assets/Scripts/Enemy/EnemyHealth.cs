@@ -43,10 +43,13 @@ public class EnemyHealth : MonoBehaviour
     public float CurrentHealth => currentHealth;
     public float MaxHealth => maxHealth;
     public bool IsDead => isDead;
+    private EnemyFeedback2D feedback;
+
 
     private void Awake()
     {
         currentHealth = maxHealth;
+        feedback = GetComponent<EnemyFeedback2D>();
     }
 
     private void Start()
@@ -69,9 +72,12 @@ public class EnemyHealth : MonoBehaviour
         {
             Die();
         }
-        else if (!string.IsNullOrEmpty(hitSfx))
+        else
         {
-            AudioManager.SfxAt(hitSfx, transform.position);
+            if (feedback != null) feedback.PlayHit();   // parpadeo rojo
+
+            if (!string.IsNullOrEmpty(hitSfx))
+                AudioManager.SfxAt(hitSfx, transform.position);
         }
     }
 
@@ -84,7 +90,11 @@ public class EnemyHealth : MonoBehaviour
 
         Debug.Log($"¡{gameObject.name} ha muerto!");
 
-        // Avisamos al RailManager de esta baja
+        // Que no se pueda disparar al cadáver mientras hace la animación de muerte
+        foreach (Collider c in GetComponentsInChildren<Collider>())
+            c.enabled = false;
+
+        // Avisamos al RailManager de esta baja (el vagón no espera al fundido)
         if (RailManager.Instance != null)
         {
             RailManager.Instance.AddKill();
@@ -93,8 +103,12 @@ public class EnemyHealth : MonoBehaviour
         if (!string.IsNullOrEmpty(deathSfx))
             AudioManager.SfxAt(deathSfx, transform.position);
 
-        // Eliminamos el objeto de la escena (la barra se elimina en OnDestroy)
-        Destroy(gameObject);
+        // Ocultamos la barra de vida al morir
+        if (barGroup != null) barGroup.alpha = 0f;
+
+        // Animación de muerte por código y destrucción cuando termina
+        float delay = feedback != null ? feedback.PlayDeath() : 0f;
+        Destroy(gameObject, delay);
     }
 
     private void OnDestroy()
