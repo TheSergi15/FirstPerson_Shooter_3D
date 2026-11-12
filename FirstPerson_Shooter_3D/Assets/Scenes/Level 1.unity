@@ -24944,7 +24944,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1449030211
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -32120,6 +32120,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1234323217171864780, guid: 62ebc6677344bfe42869a5a85103e7f0, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 4bebdddf857adb64ba2daf898e6180ca, type: 2}
+    - target: {fileID: 1788515399438428134, guid: 62ebc6677344bfe42869a5a85103e7f0, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 4352ef513192a5a42b3f28f85a38fa89, type: 2}
     - target: {fileID: 2288385608749946132, guid: 62ebc6677344bfe42869a5a85103e7f0, type: 3}
       propertyPath: fpsCam
       value: 
@@ -32149,16 +32157,28 @@ PrefabInstance:
       value: Laser Pistol
       objectReference: {fileID: 0}
     - target: {fileID: 4106454496107736252, guid: 62ebc6677344bfe42869a5a85103e7f0, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.05
+      objectReference: {fileID: 0}
+    - target: {fileID: 4106454496107736252, guid: 62ebc6677344bfe42869a5a85103e7f0, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.05
+      objectReference: {fileID: 0}
+    - target: {fileID: 4106454496107736252, guid: 62ebc6677344bfe42869a5a85103e7f0, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.05
+      objectReference: {fileID: 0}
+    - target: {fileID: 4106454496107736252, guid: 62ebc6677344bfe42869a5a85103e7f0, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.12
+      value: 1.86
       objectReference: {fileID: 0}
     - target: {fileID: 4106454496107736252, guid: 62ebc6677344bfe42869a5a85103e7f0, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 13.316
+      value: 11.63
       objectReference: {fileID: 0}
     - target: {fileID: 4106454496107736252, guid: 62ebc6677344bfe42869a5a85103e7f0, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -42.81
+      value: -29.03
       objectReference: {fileID: 0}
     - target: {fileID: 4106454496107736252, guid: 62ebc6677344bfe42869a5a85103e7f0, type: 3}
       propertyPath: m_LocalRotation.w
@@ -32189,6 +32209,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4434849625394943893, guid: 62ebc6677344bfe42869a5a85103e7f0, type: 3}
+      propertyPath: audioSource
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 4434849625394943893, guid: 62ebc6677344bfe42869a5a85103e7f0, type: 3}
       propertyPath: playerCamera
       value: 
       objectReference: {fileID: 1833697641}
@@ -32196,6 +32220,14 @@ PrefabInstance:
       propertyPath: barrelPointsTo
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 4434849625394943893, guid: 62ebc6677344bfe42869a5a85103e7f0, type: 3}
+      propertyPath: impactEffectPrefab
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 5063869103152059511, guid: 62ebc6677344bfe42869a5a85103e7f0, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: b72fe425acbd5e44496878de6331592c, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
