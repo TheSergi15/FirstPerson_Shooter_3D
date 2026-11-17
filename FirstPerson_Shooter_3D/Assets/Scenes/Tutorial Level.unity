@@ -791,7 +791,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeaponSwitcher
   weapons:
   - displayName: LaserPistol
-    weapon: {fileID: 0}
+    weapon: {fileID: 1164604734}
     icon: {fileID: 0}
     ammoIcon: {fileID: 0}
     magazineIcon: {fileID: 0}
@@ -804,7 +804,7 @@ MonoBehaviour:
     unlocked: 0
   - displayName: AK47
     weapon: {fileID: 0}
-    icon: {fileID: 21300000, guid: 9544260bb381d3248babe1993e7d5f2a, type: 3}
+    icon: {fileID: 0}
     ammoIcon: {fileID: 0}
     magazineIcon: {fileID: 0}
     unlocked: 0
@@ -814,6 +814,11 @@ MonoBehaviour:
   startWithoutBaseWeapon: 1
   unlockedForTesting: 0
   pointerModeSwitcher: {fileID: 1204066995}
+--- !u!4 &259101465 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 253958143526096, guid: 993a4600f9e174346a834374ab292bb9, type: 3}
+  m_PrefabInstance: {fileID: 2024732251}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &315023401
 GameObject:
   m_ObjectHideFlags: 0
@@ -3211,6 +3216,20 @@ MonoBehaviour:
   intensity: 1.5
   pulse: 0.35
   fadeSpeed: 6
+--- !u!114 &1164604748
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1164604734}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 57f90a759ebcc614aa41630f5d01d25d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TutorialTarget
+  type: 0
+  maxAimDistance: 20
 --- !u!1 &1182539705
 GameObject:
   m_ObjectHideFlags: 0
@@ -3602,6 +3621,18 @@ PrefabInstance:
       value: Laser Pistol
       objectReference: {fileID: 0}
     - target: {fileID: 595784866731337119, guid: cbfd49916bcbf6548b8ee5978994138d, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.05
+      objectReference: {fileID: 0}
+    - target: {fileID: 595784866731337119, guid: cbfd49916bcbf6548b8ee5978994138d, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.05
+      objectReference: {fileID: 0}
+    - target: {fileID: 595784866731337119, guid: cbfd49916bcbf6548b8ee5978994138d, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.05
+      objectReference: {fileID: 0}
+    - target: {fileID: 595784866731337119, guid: cbfd49916bcbf6548b8ee5978994138d, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0.87
       objectReference: {fileID: 0}
@@ -3641,6 +3672,22 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 595784866731337119, guid: cbfd49916bcbf6548b8ee5978994138d, type: 3}
+      propertyPath: m_ConstrainProportionsScale
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1564508863274607863, guid: cbfd49916bcbf6548b8ee5978994138d, type: 3}
+      propertyPath: highlight
+      value: 
+      objectReference: {fileID: 1164604741}
+    - target: {fileID: 2109895600305035811, guid: cbfd49916bcbf6548b8ee5978994138d, type: 3}
+      propertyPath: fpsCam
+      value: 
+      objectReference: {fileID: 1833697644}
+    - target: {fileID: 2109895600305035811, guid: cbfd49916bcbf6548b8ee5978994138d, type: 3}
+      propertyPath: player
+      value: 
+      objectReference: {fileID: 2073706879}
     - target: {fileID: 2109895600305035811, guid: cbfd49916bcbf6548b8ee5978994138d, type: 3}
       propertyPath: switcher
       value: 
@@ -3649,10 +3696,30 @@ PrefabInstance:
       propertyPath: highlight
       value: 
       objectReference: {fileID: 1164604741}
+    - target: {fileID: 2109895600305035811, guid: cbfd49916bcbf6548b8ee5978994138d, type: 3}
+      propertyPath: gunContainer
+      value: 
+      objectReference: {fileID: 259101465}
+    - target: {fileID: 2109895600305035811, guid: cbfd49916bcbf6548b8ee5978994138d, type: 3}
+      propertyPath: requireAimToPickUp
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 6057554009409267972, guid: cbfd49916bcbf6548b8ee5978994138d, type: 3}
       propertyPath: playerCamera
       value: 
       objectReference: {fileID: 1833697641}
+    - target: {fileID: 6057554009409267972, guid: cbfd49916bcbf6548b8ee5978994138d, type: 3}
+      propertyPath: aimMask.m_Bits
+      value: 128
+      objectReference: {fileID: 0}
+    - target: {fileID: 6057554009409267972, guid: cbfd49916bcbf6548b8ee5978994138d, type: 3}
+      propertyPath: reloadWithRightClick
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6460287918655292151, guid: cbfd49916bcbf6548b8ee5978994138d, type: 3}
+      propertyPath: panLevelCustomCurve.m_Curve.Array.data[0].value
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -3660,6 +3727,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 220526309588303653, guid: cbfd49916bcbf6548b8ee5978994138d, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1164604741}
+    - targetCorrespondingSourceObject: {fileID: 220526309588303653, guid: cbfd49916bcbf6548b8ee5978994138d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1164604748}
   m_SourcePrefab: {fileID: 100100000, guid: cbfd49916bcbf6548b8ee5978994138d, type: 3}
 --- !u!1 &1414873347
 GameObject:
